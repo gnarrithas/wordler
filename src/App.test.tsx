@@ -432,7 +432,7 @@ test("a dev New word game is restored; in production it is not", async () => {
   expect(board().textContent).toBe("");
 });
 
-test("Share copies the day number, score and letter count", async () => {
+test("Share copies the day number (from 1) and letter count", async () => {
   vi.setSystemTime(new Date(2026, 10, 11, 12));
   const writeText = vi.fn().mockResolvedValue(undefined);
   Object.defineProperty(window, "isSecureContext", {
@@ -453,7 +453,7 @@ test("Share copies the day number, score and letter count", async () => {
     fireEvent.click(screen.getByText("Share"));
   });
   expect(writeText).toHaveBeenCalledWith(
-    `Wordler 2 · 2/${getMaxGuesses("CAT")} · 6 letters\n\n🟩⬜🟩\n🟩🟩🟩`,
+    "Wordler 3 · 6 letters\n\n🟩⬜🟩\n🟩🟩🟩",
   );
   delete (navigator as any).clipboard;
 });

@@ -30,6 +30,8 @@ services:
     build:
       context: ..
       dockerfile: deploy/Dockerfile
+      secrets:
+        - SOLUTIONS_SHUFFLE_SEED
     image: wordler:latest
     restart: unless-stopped
 
@@ -71,6 +73,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+# Build-time only: the seed that shuffles the solutions into daily order.
+secrets:
+  SOLUTIONS_SHUFFLE_SEED:
+    environment: SOLUTIONS_SHUFFLE_SEED
 
 volumes:
   caddy-data:

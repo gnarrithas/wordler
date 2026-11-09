@@ -5,13 +5,21 @@ non-root user on port 8080 (IPv4).
 
 ```sh
 # From the repository root (the build context must be the whole project):
-docker build -f deploy/Dockerfile -t wordler .
+export SOLUTIONS_SHUFFLE_SEED=...   # same value as the GitHub repo secret
+docker build -f deploy/Dockerfile \
+  --secret id=SOLUTIONS_SHUFFLE_SEED,env=SOLUTIONS_SHUFFLE_SEED -t wordler .
 docker run --rm -p 8080:8080 wordler
 # then open http://localhost:8080
 ```
 
 The build needs BuildKit (the default with Docker Engine 23+ or the `buildx`
-plugin): the Dockerfile uses a cache mount and `deploy/Dockerfile.dockerignore`.
+plugin): the Dockerfile uses a cache mount, a build secret and
+`deploy/Dockerfile.dockerignore`.
+
+The build shuffles the solution list into daily order with
+`scripts/shuffle_solutions.py`, seeded by `SOLUTIONS_SHUFFLE_SEED` (a build
+secret, so it stays out of the image). The build fails without it. Use the
+same seed as the GitHub Pages deploy so both serve the same daily word.
 
 - `GET /healthz` returns `ok` for load-balancer and container health checks.
 - Hashed assets under `/assets/` are cached for a year; the word lists under
@@ -40,7 +48,8 @@ Umami counts visitors without cookies, so no consent banner is needed. A
 
 ```sh
 cd deploy
-cp .env.example .env     # set SITE_ADDRESS, and both secrets with: openssl rand -hex 32
+cp .env.example .env     # set SITE_ADDRESS, SOLUTIONS_SHUFFLE_SEED, and both
+                         # Umami secrets with: openssl rand -hex 32
 docker compose up -d --build
 ```
 
@@ -68,7 +77,7 @@ devices), the app sends these events:
 | Event | When | Data |
 |---|---|---|
 | `game_start` | first valid guess of a game | `length` |
-| `game_end` | win, loss, give up, or New word after at least one guess | `outcome` (`won`, `lost`, `gave_up`, `skipped`), `guesses`, `length`, `maxGuesses`, `seconds`, `word` |
+| `game_end` | win, loss, or New word (dev only) after at least one guess | `outcome` (`won`, `lost`, `skipped`), `guesses`, `length`, `maxGuesses`, `seconds`, `word` |
 | `share` | Share pressed | `won`, `length` |
 
 `seconds` is active play time: gaps between key presses count up to two

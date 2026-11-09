@@ -1,9 +1,12 @@
 # syntax=docker/dockerfile:1
 #
 # Wordler: build the static React bundle, then serve it with nginx.
-# Build from the repository root so the whole project is in the context:
+# Build from the repository root so the whole project is in the context, with
+# the daily-word seed passed as a build secret from the environment:
 #
-#   docker build -f deploy/Dockerfile -t wordler .
+#   export SOLUTIONS_SHUFFLE_SEED=...
+#   docker build -f deploy/Dockerfile \
+#     --secret id=SOLUTIONS_SHUFFLE_SEED,env=SOLUTIONS_SHUFFLE_SEED -t wordler .
 #   docker run --rm -p 8080:8080 wordler
 
 # Base images are pinned by digest for reproducible builds; the tag is kept
@@ -18,7 +21,14 @@ COPY package.json package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm \
     npm ci --no-audit --no-fund
 
+# Python runs the deploy-time shuffle of the solutions into daily order.
+RUN apk add --no-cache python3
+
 COPY . .
+# The seed is a build secret: it never lands in a layer or the image history.
+# The script fails without it, so no build ships the list alphabetically.
+RUN --mount=type=secret,id=SOLUTIONS_SHUFFLE_SEED,env=SOLUTIONS_SHUFFLE_SEED \
+    python3 scripts/shuffle_solutions.py public/words/solutions.txt
 RUN npm run build
 
 # --- runtime stage ----------------------------------------------------------

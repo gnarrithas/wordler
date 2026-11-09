@@ -380,14 +380,7 @@ function Game() {
 
   const onShare = async () => {
     trackEvent("share", { won: isGameWon, length: solution.length });
-    const text = getShareText(
-      day,
-      guesses,
-      solution,
-      isGameWon,
-      maxGuesses,
-      settings.highContrast,
-    );
+    const text = getShareText(day, guesses, solution, settings.highContrast);
     let label = "Share";
     try {
       const outcome = await shareText(text);

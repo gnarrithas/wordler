@@ -1,49 +1,38 @@
 import { getShareText, shareText } from "./share";
 
-test("a win shows the day, guesses out of the limit and letters", () => {
-  expect(getShareText(3, ["COT", "CAT"], "CAT", true, 6)).toBe(
-    "Wordler 3 · 2/6 · 6 letters\n\n🟩⬜🟩\n🟩🟩🟩",
+test("day index 0 is Wordler 1; the header has only the letter count", () => {
+  expect(getShareText(0, ["COT", "CAT"], "CAT")).toBe(
+    "Wordler 1 · 6 letters\n\n🟩⬜🟩\n🟩🟩🟩",
   );
 });
 
-test("large day numbers get thousands separators", () => {
-  const guesses = [
-    "ABCDEF",
-    "GHIJKL",
-    "MNOPQR",
-    "STUVWX",
-    "ABCD",
-    "EFGH",
-    "IJKL",
-    "TENLETTERS",
-  ];
-  expect(guesses.join("")).toHaveLength(46);
-  expect(
-    getShareText(1200, guesses, "TENLETTERS", true, 11).split("\n")[0],
-  ).toBe("Wordler 1,200 · 8/11 · 46 letters");
-});
-
-test("a loss shows X", () => {
-  expect(getShareText(0, ["DOG"], "CAT", false, 6)).toBe(
-    "Wordler 0 · X/6 · 3 letters\n\n⬜⬜⬜",
+test("large numbers get thousands separators", () => {
+  expect(getShareText(1199, ["CAT"], "CAT").split("\n")[0]).toBe(
+    "Wordler 1,200 · 3 letters",
   );
 });
 
-test("a game off the daily sequence has no day number", () => {
-  expect(getShareText(null, ["CAT"], "CAT", true, 6).split("\n")[0]).toBe(
-    "Wordler · 1/6 · 3 letters",
+test("a loss shows its rows the same way", () => {
+  expect(getShareText(2, ["DOG"], "CAT")).toBe(
+    "Wordler 3 · 3 letters\n\n⬜⬜⬜",
+  );
+});
+
+test("a game off the daily sequence has no number", () => {
+  expect(getShareText(null, ["CAT"], "CAT").split("\n")[0]).toBe(
+    "Wordler · 3 letters",
   );
 });
 
 test("high contrast uses orange and blue squares", () => {
-  expect(getShareText(3, ["COT", "CAT"], "CAT", true, 6, true)).toBe(
-    "Wordler 3 · 2/6 · 6 letters\n\n🟧⬜🟧\n🟧🟧🟧",
+  expect(getShareText(0, ["COT", "CAT"], "CAT", true)).toBe(
+    "Wordler 1 · 6 letters\n\n🟧⬜🟧\n🟧🟧🟧",
   );
 });
 
 test("a single letter is singular", () => {
-  expect(getShareText(0, ["A"], "CAT", false, 6).split("\n")[0]).toBe(
-    "Wordler 0 · X/6 · 1 letter",
+  expect(getShareText(0, ["A"], "CAT").split("\n")[0]).toBe(
+    "Wordler 1 · 1 letter",
   );
 });
 
