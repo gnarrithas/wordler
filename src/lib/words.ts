@@ -1,7 +1,8 @@
 import { MIN_GUESSES } from "../constants/settings";
 
 const MS_IN_DAY = 86400000;
-// Day 0 of the daily sequence: 9 November 2026 (months count from 0).
+// Day 0 of the daily sequence: 9 November 2026 (months count from 0). Must
+// match FIRST_DAY in scripts/shuffle_solutions.py.
 const FIRST_DAY_UTC = Date.UTC(2026, 10, 9);
 
 // The word lists are served as plain text from public/words/ and fetched at
@@ -12,6 +13,8 @@ type WordLists = {
   guessSet: Set<string>;
   shortest: number;
   longest: number;
+  // Line N is day N's word. Deploys publish it daily, up to tomorrow only.
+  daily: string[];
 };
 
 let lists: WordLists | undefined;
@@ -23,8 +26,13 @@ const parseList = (text: string) =>
     .map((word) => word.trim().toLowerCase())
     .filter((word) => word.length > 0);
 
-// Installs the lists from their file contents (also used by tests).
-export const setWordLists = (solutionsText: string, guessesText: string) => {
+// Installs the lists from their file contents (also used by tests). Without
+// a daily list (development), days walk through the solutions in order.
+export const setWordLists = (
+  solutionsText: string,
+  guessesText: string,
+  dailyText?: string,
+) => {
   const solutions = parseList(solutionsText);
   if (solutions.length === 0) {
     throw new Error("The solution list is empty");
@@ -35,12 +43,19 @@ export const setWordLists = (solutionsText: string, guessesText: string) => {
     shortest = Math.min(shortest, word.length);
     longest = Math.max(longest, word.length);
   }
+  const solutionSet = new Set(solutions);
+  const daily = dailyText === undefined ? solutions : parseList(dailyText);
+  // Also rejects an HTML page served in place of a missing file.
+  if (daily.length === 0 || !daily.every((word) => solutionSet.has(word))) {
+    throw new Error("The daily list is empty or not made of solutions");
+  }
   lists = {
     solutions,
-    solutionSet: new Set(solutions),
+    solutionSet,
     guessSet: new Set(parseList(guessesText)),
     shortest,
     longest,
+    daily,
   };
 };
 
@@ -60,11 +75,15 @@ export const areWordsLoaded = () => lists !== undefined;
 // Fetches both lists once; a failed load can be retried by calling it again.
 export const loadWords = () => {
   if (!loading) {
+    // Development has no daily list; production cannot work without one.
     loading = Promise.all([
       fetchText("/words/solutions.txt"),
       fetchText("/words/guesses.txt"),
+      import.meta.env.DEV ? undefined : fetchText("/words/daily.txt"),
     ])
-      .then(([solutions, guesses]) => setWordLists(solutions, guesses))
+      .then(([solutions, guesses, daily]) =>
+        setWordLists(solutions, guesses, daily),
+      )
       .catch((err) => {
         loading = undefined;
         throw err;
@@ -100,18 +119,16 @@ export const isSolution = (word: string) =>
   getLists().solutionSet.has(word.toLowerCase());
 
 // Days since the first day, by the player's own calendar date, so the word
-// changes at local midnight. Clocks set before the first day get day 0.
+// changes at local midnight. Clocks set before the first day get day 0, and
+// clocks set past the last published day get that day.
 export const getDayIndex = (now = new Date()) => {
   const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
-  return Math.max(0, Math.round((today - FIRST_DAY_UTC) / MS_IN_DAY));
+  const day = Math.round((today - FIRST_DAY_UTC) / MS_IN_DAY);
+  return Math.min(Math.max(0, day), getLists().daily.length - 1);
 };
 
-// The deployed solutions.txt is already in daily order (see
-// scripts/shuffle_solutions.py): day N plays line N, wrapping at the end.
-export const getWordOfDay = (day = getDayIndex()) => {
-  const { solutions } = getLists();
-  return solutions[day % solutions.length].toUpperCase();
-};
+export const getWordOfDay = (day = getDayIndex()) =>
+  getLists().daily[day].toUpperCase();
 
 export const getRandomWord = (exclude: string) => {
   const { solutions } = getLists();

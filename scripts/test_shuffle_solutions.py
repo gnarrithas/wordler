@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Pins the shuffle: a change here would reorder every deployed daily word."""
 
+import datetime as dt
 import os
 import tempfile
 import unittest
@@ -44,18 +45,38 @@ class ShuffleTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             s.shuffle(WORDS, "")
 
-    def test_main_rewrites_the_file_and_requires_the_seed(self):
+    def test_daily_words_stop_at_tomorrow(self):
+        order = s.shuffle(WORDS, "test-seed")
+        first = s.FIRST_DAY
+        self.assertEqual(s.daily_words(WORDS, "test-seed", first), order[:2])
+        later = first + dt.timedelta(days=3)
+        self.assertEqual(s.daily_words(WORDS, "test-seed", later), order[:5])
+        # Before the first day, still days 0 and 1.
+        early = first - dt.timedelta(days=30)
+        self.assertEqual(s.daily_words(WORDS, "test-seed", early), order[:2])
+
+    def test_daily_words_wrap_past_the_end(self):
+        order = s.shuffle(WORDS, "test-seed")
+        day_9 = s.FIRST_DAY + dt.timedelta(days=9)
+        self.assertEqual(
+            s.daily_words(WORDS, "test-seed", day_9), order + order[:3]
+        )
+
+    def test_main_writes_the_daily_list_and_requires_the_seed(self):
         with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "solutions.txt"
-            path.write_text("\n".join(WORDS))
+            source = Path(tmp) / "solutions.txt"
+            output = Path(tmp) / "out" / "daily.txt"
+            source.write_text("\n".join(WORDS))
+            args = [str(source), str(output), "--today", "2026-11-10"]
             with mock.patch.dict(os.environ, {s.SEED_ENV: ""}):
-                self.assertEqual(s.main([str(path)]), 1)
+                self.assertEqual(s.main(args), 1)
+            self.assertFalse(output.exists())
             with mock.patch.dict(os.environ, {s.SEED_ENV: "test-seed"}):
-                self.assertEqual(s.main([str(path)]), 0)
-            self.assertEqual(
-                path.read_text(),
-                "\n".join(s.shuffle(WORDS, "test-seed")) + "\n",
-            )
+                self.assertEqual(s.main(args), 0)
+            expected = s.shuffle(WORDS, "test-seed")[:3]
+            self.assertEqual(output.read_text(), "\n".join(expected) + "\n")
+            # The source list is left alone.
+            self.assertEqual(source.read_text(), "\n".join(WORDS))
 
 
 if __name__ == "__main__":

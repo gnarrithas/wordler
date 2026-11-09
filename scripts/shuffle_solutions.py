@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Shuffle the solution list into the daily order, from a secret seed.
+"""Write the daily word list: the shuffled solutions, up to tomorrow only.
 
-The deploy workflow runs this before the build, so the deployed
-solutions.txt lists one word per day: line 0 is the first day's word.
+Deploys run this daily after the build. Line N of the output is day N's word,
+day 0 being FIRST_DAY. The list stops at tomorrow (UTC), which covers every
+time zone's current date, so future words are never published.
 
 The shuffle depends only on the seed and the set of words. It uses
 HMAC-SHA256 in counter mode as its random stream and an exact rejection
@@ -11,6 +12,7 @@ Python version.
 """
 
 import argparse
+import datetime as dt
 import hashlib
 import hmac
 import logging
@@ -19,6 +21,10 @@ import sys
 from pathlib import Path
 
 SEED_ENV = "SOLUTIONS_SHUFFLE_SEED"
+# Must match FIRST_DAY_UTC in src/lib/words.ts.
+FIRST_DAY = dt.date(2026, 11, 9)
+# Days past today (UTC) to publish: UTC+14 is up to a day ahead of UTC.
+DAYS_AHEAD = 1
 
 log = logging.getLogger("shuffle_solutions")
 
@@ -69,14 +75,30 @@ def shuffle(words, seed: str):
     return order
 
 
+def daily_words(words, seed: str, today: dt.date):
+    """Words for day 0 through tomorrow; the shuffle wraps if it runs out."""
+    order = shuffle(words, seed)
+    if not order:
+        return []
+    last_day = max(0, (today - FIRST_DAY).days) + DAYS_AHEAD
+    return [order[day % len(order)] for day in range(last_day + 1)]
+
+
+def parse_date(text: str) -> dt.date:
+    try:
+        return dt.date.fromisoformat(text)
+    except ValueError as err:
+        raise argparse.ArgumentTypeError(f"not a YYYY-MM-DD date: {text!r}") from err
+
+
 def parse_args(argv):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("input", type=Path, help="solution list, one word per line")
+    parser.add_argument("output", type=Path, help="daily list to write")
     parser.add_argument(
-        "-o",
-        "--output",
-        type=Path,
-        help="where to write the daily order (default: overwrite the input)",
+        "--today",
+        type=parse_date,
+        help="UTC date to publish through tomorrow of (default: now)",
     )
     return parser.parse_args(argv)
 
@@ -94,17 +116,19 @@ def main(argv=None) -> int:
     except OSError as err:
         log.error("cannot read %s: %s", args.input, err)
         return 1
-    order = shuffle(words, seed)
-    if not order:
+    today = args.today or dt.datetime.now(dt.timezone.utc).date()
+    daily = daily_words(words, seed, today)
+    if not daily:
         log.error("%s has no words", args.input)
         return 1
-    output = args.output or args.input
     try:
-        output.write_text("\n".join(order) + "\n", encoding="utf-8")
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text("\n".join(daily) + "\n", encoding="utf-8")
     except OSError as err:
-        log.error("cannot write %s: %s", output, err)
+        log.error("cannot write %s: %s", args.output, err)
         return 1
-    log.info("wrote %d words in daily order to %s", len(order), output)
+    # Only counts: the words themselves are the secret.
+    log.info("wrote days 0-%d (as of %s UTC) to %s", len(daily) - 1, today, args.output)
     return 0
 
 

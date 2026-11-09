@@ -5,8 +5,11 @@
 # the daily-word seed passed as a build secret from the environment:
 #
 #   export SOLUTIONS_SHUFFLE_SEED=...
-#   docker build -f deploy/Dockerfile \
+#   docker build -f deploy/Dockerfile --build-arg WORDS_DAY=$(date -u +%F) \
 #     --secret id=SOLUTIONS_SHUFFLE_SEED,env=SOLUTIONS_SHUFFLE_SEED -t wordler .
+#
+# The image publishes words up to the day after WORDS_DAY: rebuild it daily
+# (see deploy/README.md).
 #   docker run --rm -p 8080:8080 wordler
 
 # Base images are pinned by digest for reproducible builds; the tag is kept
@@ -25,11 +28,16 @@ RUN --mount=type=cache,target=/root/.npm \
 RUN apk add --no-cache python3
 
 COPY . .
-# The seed is a build secret: it never lands in a layer or the image history.
-# The script fails without it, so no build ships the list alphabetically.
-RUN --mount=type=secret,id=SOLUTIONS_SHUFFLE_SEED,env=SOLUTIONS_SHUFFLE_SEED \
-    python3 scripts/shuffle_solutions.py public/words/solutions.txt
 RUN npm run build
+
+# Today's and tomorrow's words, never later ones. The seed is a build secret:
+# it never lands in a layer or the image history, and the script fails
+# without it. WORDS_DAY (UTC, YYYY-MM-DD) is part of the cache key, so a new
+# day reruns this step instead of reusing yesterday's list.
+ARG WORDS_DAY=
+RUN --mount=type=secret,id=SOLUTIONS_SHUFFLE_SEED,env=SOLUTIONS_SHUFFLE_SEED \
+    python3 scripts/shuffle_solutions.py public/words/solutions.txt build/words/daily.txt \
+      ${WORDS_DAY:+--today "$WORDS_DAY"}
 
 # --- runtime stage ----------------------------------------------------------
 # The unprivileged image runs nginx as a non-root user and listens on 8080.

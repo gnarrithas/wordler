@@ -6,7 +6,7 @@ non-root user on port 8080 (IPv4).
 ```sh
 # From the repository root (the build context must be the whole project):
 export SOLUTIONS_SHUFFLE_SEED=...   # same value as the GitHub repo secret
-docker build -f deploy/Dockerfile \
+docker build -f deploy/Dockerfile --build-arg WORDS_DAY=$(date -u +%F) \
   --secret id=SOLUTIONS_SHUFFLE_SEED,env=SOLUTIONS_SHUFFLE_SEED -t wordler .
 docker run --rm -p 8080:8080 wordler
 # then open http://localhost:8080
@@ -16,10 +16,24 @@ The build needs BuildKit (the default with Docker Engine 23+ or the `buildx`
 plugin): the Dockerfile uses a cache mount, a build secret and
 `deploy/Dockerfile.dockerignore`.
 
-The build shuffles the solution list into daily order with
-`scripts/shuffle_solutions.py`, seeded by `SOLUTIONS_SHUFFLE_SEED` (a build
-secret, so it stays out of the image). The build fails without it. Use the
-same seed as the GitHub Pages deploy so both serve the same daily word.
+### Daily words
+
+The build writes `/words/daily.txt` with `scripts/shuffle_solutions.py`: the
+solutions shuffled by `SOLUTIONS_SHUFFLE_SEED` (a build secret, so it stays
+out of the image), for every day up to the day after `WORDS_DAY` (UTC). Later
+words are never published. The build fails without the seed. Use the same
+seed as the GitHub Pages deploy so both serve the same daily word.
+
+So the image must be **rebuilt every day**, before 10:00 UTC (when UTC+14
+reaches the next day). A host crontab entry, twice for a retry:
+
+```cron
+7 0,5 * * * cd /path/to/repo/deploy && WORDS_DAY=$(date -u +\%F) docker compose up -d --build wordle >> /var/log/wordler-daily.log 2>&1
+```
+
+`WORDS_DAY` is part of the build cache key; without it a rebuild may reuse an
+old list. Once the last published day passes, players stay on that day's
+word until the next rebuild.
 
 - `GET /healthz` returns `ok` for load-balancer and container health checks.
 - Hashed assets under `/assets/` are cached for a year; the word lists under

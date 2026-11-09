@@ -33,10 +33,60 @@ test("a clock set before the first day gets day 0", () => {
   expect(getDayIndex(at(2021, 6, 1))).toBe(0);
 });
 
-test("day N plays line N of the deployed list, wrapping at the end", () => {
+test("without a daily list, day N plays solution N", () => {
   expect(getWordOfDay(0)).toBe(WORDS[0].toUpperCase());
   expect(getWordOfDay(1)).toBe(WORDS[1].toUpperCase());
-  expect(getWordOfDay(WORDS.length + 2)).toBe(WORDS[2].toUpperCase());
+});
+
+describe("with a published daily list", () => {
+  afterAll(() => setWordLists(solutionsText, read("guesses.txt")));
+
+  test("day N plays line N, and days past the list stay on its last line", () => {
+    setWordLists(solutionsText, "", "cat\ndog\n");
+    expect(getWordOfDay(0)).toBe("CAT");
+    expect(getDayIndex(at(2026, 11, 10))).toBe(1);
+    expect(getDayIndex(at(2027, 6, 1))).toBe(1);
+    expect(getWordOfDay(getDayIndex(at(2027, 6, 1)))).toBe("DOG");
+  });
+
+  test("a daily list that is empty or not solutions is refused", () => {
+    expect(() => setWordLists(solutionsText, "", "")).toThrow();
+    expect(() => setWordLists(solutionsText, "", "<!doctype html>")).toThrow();
+  });
+});
+
+test("production loads the daily list; development does not fetch it", async () => {
+  const fetched: string[] = [];
+  const respond = (url: RequestInfo | URL) => {
+    fetched.push(String(url));
+    const body = String(url).endsWith("daily.txt") ? "dog\n" : "cat\ndog\n";
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      text: () => Promise.resolve(body),
+    } as Response);
+  };
+  const original = window.fetch;
+  window.fetch = vi.fn(respond);
+  try {
+    vi.stubEnv("DEV", false);
+    vi.resetModules();
+    const prod = await import("./words");
+    await prod.loadWords();
+    expect(fetched).toContain("/words/daily.txt");
+    expect(prod.getWordOfDay(0)).toBe("DOG");
+
+    fetched.length = 0;
+    vi.stubEnv("DEV", true);
+    vi.resetModules();
+    const dev = await import("./words");
+    await dev.loadWords();
+    expect(fetched).not.toContain("/words/daily.txt");
+    expect(dev.getWordOfDay(0)).toBe("CAT");
+  } finally {
+    window.fetch = original;
+    vi.unstubAllEnvs();
+  }
 });
 
 test("lookups are case-insensitive and cover both lists", () => {

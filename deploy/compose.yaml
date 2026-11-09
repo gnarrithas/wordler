@@ -32,6 +32,10 @@ services:
       dockerfile: deploy/Dockerfile
       secrets:
         - SOLUTIONS_SHUFFLE_SEED
+      # The day the image publishes words up to (plus one); rebuild daily
+      # with WORDS_DAY=$(date -u +%F), see README.md.
+      args:
+        WORDS_DAY: ${WORDS_DAY:-}
     image: wordler:latest
     restart: unless-stopped
 
