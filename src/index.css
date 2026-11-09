@@ -176,22 +176,28 @@ body {
    slowly drifting; ::after is a one-off ripple. Rows that just arrived
    (.length-match-enter) wait for --length-match-delay, the end of the tile
    flips, then pop the outline in. Box shadows rather than transforms keep
-   the ripple from growing the board's scroll area. */
+   the ripple from growing the board's scroll area.
+   Geometry: a 3px outline 3px clear of the tiles on every side. Tiles keep
+   a 2px side margin inside the row, hence the smaller horizontal inset; the
+   row's 9px vertical margins (which collapse with the 4px between rows)
+   keep 3px between the outline and the rows above and below. */
 .length-match {
   position: relative;
+  margin-top: 9px;
+  margin-bottom: 9px;
 }
 
 .length-match::before,
 .length-match::after {
   content: "";
   position: absolute;
-  inset: -4px;
+  inset: -6px -4px;
   border-radius: 10px;
   pointer-events: none;
 }
 
 .length-match::before {
-  padding: 2px;
+  padding: 3px;
   background: linear-gradient(
       90deg,
       var(--length-match-1),
