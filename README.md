@@ -41,6 +41,13 @@ source list by word frequency (`wordfreq` package):
 python3 filter.py <input.txt> <output.txt> <min-zipf-frequency>
 ```
 
+`scripts/prune_solutions.py` then drops plurals and -ly/-ness forms of other
+solutions; they stay valid guesses:
+
+```sh
+python3 scripts/prune_solutions.py public/words/solutions.txt [--dry-run]
+```
+
 ## Deployment
 
 `deploy/` contains a Dockerfile that builds the app and serves it with nginx.
