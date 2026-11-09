@@ -444,7 +444,7 @@ function Game() {
         </button>
       </div>
       <p className="text-center text-sm text-gray-500 dark:text-gray-400">
-        Letters used: <span className="font-bold">{lettersUsed}</span>
+        Total letters used: <span className="font-bold">{lettersUsed}</span>
       </p>
       <Grid
         guesses={guesses}

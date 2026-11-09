@@ -59,29 +59,19 @@ export const InfoModal = ({ isOpen, handleClose }: Props) => {
                     as="h3"
                     className="text-center text-lg leading-6 font-medium text-gray-900 dark:text-white"
                   >
-                    How to play
+                    How To Play
                   </Dialog.Title>
                   <div className="mt-2 space-y-3 text-sm text-gray-500 dark:text-gray-300">
                     <p>
-                      Guess the hidden word. Its length is a secret: it can be
-                      anywhere from {shortest} to {longest} letters. Each guess
-                      must be a word from the game's word list,{" "}
-                      {MIN_WORD_LENGTH} to {MAX_WORD_LENGTH} letters long.
+                      Guess the hidden word. It has between {MIN_WORD_LENGTH} and {MAX_WORD_LENGTH} letters.
                     </p>
                     <p>
-                      You get {MIN_GUESSES} tries, or one more try than the word
-                      has letters if it is longer. If a new row appears after
-                      your {ordinal(MIN_GUESSES)} guess, the word has at least{" "}
-                      {MIN_GUESSES} letters.
+                      The number of tries you get is one more than the number of letters in the word, but at least 6.
                     </p>
 
                     <h4 className="pt-1 font-medium text-gray-900 dark:text-white">
-                      Reading the colors
+                        Examples
                     </h4>
-                    <p>
-                      Each letter is checked against the letter in the same
-                      position of the word, counting from the left.
-                    </p>
 
                     <div>
                       <div className="flex justify-center mb-1">
@@ -135,57 +125,6 @@ export const InfoModal = ({ isOpen, handleClose }: Props) => {
                         how it continues.
                       </p>
                     </div>
-
-                    <h4 className="pt-1 font-medium text-gray-900 dark:text-white">
-                      Settings
-                    </h4>
-                    <p>The gear button opens the settings:</p>
-                    <ul className="list-disc pl-5 space-y-1">
-                      <li>
-                        <strong>Hard Mode</strong> makes every guess reuse the
-                        hints so far: green letters stay in their spot and
-                        yellow letters must appear. It can only be turned on at
-                        the start of a round.
-                      </li>
-                      <li>
-                        <strong>Reveal Length</strong> rings a guess that has
-                        the same length as the word and tells you so.
-                      </li>
-                      <li>
-                        <strong>High Contrast Mode</strong> swaps green and
-                        yellow for orange and blue.
-                      </li>
-                      <li>
-                        <strong>Onscreen Keyboard Input Only</strong> ignores
-                        your physical keyboard.
-                      </li>
-                    </ul>
-
-                    <h4 className="pt-1 font-medium text-gray-900 dark:text-white">
-                      Scoring and buttons
-                    </h4>
-                    <ul className="list-disc pl-5 space-y-1">
-                      <li>
-                        <strong>Letters used</strong> adds up every letter you
-                        guess. Fewer tries is good; fewer letters is a bonus.
-                      </li>
-                      {import.meta.env.DEV && (
-                        <>
-                          <li>
-                            <strong>New word</strong> starts over with a
-                            random word (development only).
-                          </li>
-                          <li>
-                            <strong>Reveal</strong> shows the answer faded in
-                            the row you are typing (development only).
-                          </li>
-                        </>
-                      )}
-                      <li>
-                        <strong>Share</strong> appears when the game ends and
-                        copies a spoiler-free result to your clipboard.
-                      </li>
-                    </ul>
                   </div>
                 </div>
               </div>

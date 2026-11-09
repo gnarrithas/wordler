@@ -110,9 +110,9 @@ afterEach(() => {
 test("renders the board and the letter count once the words load", async () => {
   render(<App />);
   expect(await screen.findByTestId("board")).toBeInTheDocument();
-  expect(screen.getByText(/Letters used/)).toHaveTextContent("Letters used: 0");
+  expect(screen.getByText(/Total letters used/)).toHaveTextContent("Total letters used: 0");
   submit("COT");
-  expect(screen.getByText(/Letters used/)).toHaveTextContent("Letters used: 3");
+  expect(screen.getByText(/Total letters used/)).toHaveTextContent("Total letters used: 3");
 });
 
 test("the input row keeps one empty box after five or more letters", async () => {
@@ -373,7 +373,7 @@ test("Enter submits after clicking a button and typing", async () => {
   expect(document.activeElement).toBe(screen.getByText("New word"));
   submit("CAT");
   expect(board().textContent).toBe("CAT");
-  expect(screen.getByText(/Letters used/)).toHaveTextContent("Letters used: 3");
+  expect(screen.getByText(/Total letters used/)).toHaveTextContent("Total letters used: 3");
 });
 
 test("listeners are attached once, not on every render", async () => {
