@@ -327,6 +327,10 @@ test("numpad Enter submits, a held Enter does not", async () => {
   expect(inputRow()).not.toBeInTheDocument();
 });
 
+// The Settings dialog has a focusable Close button, so opening it moves focus
+// away and closing it hands focus back to this button.
+const settingsButton = () => screen.getByRole("button", { name: "Settings" });
+
 const waitForModalTransition = () => {
   for (let i = 0; i < 5; i++) {
     act(() => {
@@ -338,14 +342,14 @@ const waitForModalTransition = () => {
 test("keys do nothing while a modal is open; Enter submits after a mouse close", async () => {
   await renderGame();
   type("CA");
-  mouseClick(screen.getByText("About this game"));
+  mouseClick(settingsButton());
   type("T");
   press("Enter");
   expect(board().textContent).toBe("CA");
   mouseClick(document.querySelector('[id^="headlessui-dialog-overlay"]')!);
   waitForModalTransition();
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-  expect(document.activeElement).toBe(screen.getByText("About this game"));
+  expect(document.activeElement).toBe(settingsButton());
   type("T");
   press("Enter");
   expect(inputRow()).not.toBeInTheDocument();
@@ -354,11 +358,11 @@ test("keys do nothing while a modal is open; Enter submits after a mouse close",
 test("Enter on a button reached with the keyboard is left to the button", async () => {
   await renderGame();
   type("CAT");
-  mouseClick(screen.getByText("About this game"));
+  mouseClick(settingsButton());
   press("Escape");
   waitForModalTransition();
   // Focus came back after a keyboard close, so Enter belongs to the button.
-  expect(document.activeElement).toBe(screen.getByText("About this game"));
+  expect(document.activeElement).toBe(settingsButton());
   press("Enter");
   expect(inputRow()).toBeInTheDocument();
 });

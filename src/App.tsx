@@ -4,7 +4,6 @@ import { Alert } from "./components/alerts/Alert";
 import { Grid } from "./components/grid/Grid";
 import { Keyboard } from "./components/keyboard/Keyboard";
 import { Logo } from "./components/logo/Logo";
-import { AboutModal } from "./components/modals/AboutModal";
 import { InfoModal } from "./components/modals/InfoModal";
 import { SettingsModal } from "./components/modals/SettingsModal";
 import { MAX_WORD_LENGTH, MIN_WORD_LENGTH } from "./constants/settings";
@@ -97,7 +96,6 @@ function Game() {
   // A finished game restored from storage shows its result without toasts.
   const skipEndToastRef = useRef(isRestoredGameOver);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
-  const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   // Dev only: the answer shows faded in the input row.
   const [isSolutionShown, setIsSolutionShown] = useState(false);
@@ -474,9 +472,7 @@ function Game() {
           guesses={guesses.slice(0, revealedCount)}
           solution={solution}
           isPhysicalKeyboardIgnored={settings.onscreenKeyboardOnly}
-          isInputDisabled={
-            isInfoModalOpen || isAboutModalOpen || isSettingsModalOpen
-          }
+          isInputDisabled={isInfoModalOpen || isSettingsModalOpen}
         />
       </div>
       <InfoModal
@@ -491,18 +487,6 @@ function Game() {
         theme={theme}
         onToggleTheme={onToggleTheme}
       />
-      <AboutModal
-        isOpen={isAboutModalOpen}
-        handleClose={() => setIsAboutModalOpen(false)}
-      />
-
-      <button
-        type="button"
-        className="shrink-0 mx-auto mt-4 sm:mt-8 flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-indigo-700 bg-indigo-100 hover:bg-indigo-200 dark:text-indigo-100 dark:bg-indigo-900 dark:hover:bg-indigo-800 dark:focus-visible:ring-offset-wordle-night-bg focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500"
-        onClick={() => setIsAboutModalOpen(true)}
-      >
-        About this game
-      </button>
     </div>
   );
 }
