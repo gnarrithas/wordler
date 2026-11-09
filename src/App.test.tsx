@@ -144,8 +144,8 @@ test("typing after a win changes nothing and the input row is gone", async () =>
   type("DOG");
   expect(board()).not.toHaveTextContent("D");
   expect(board().children.length).toBe(rowsAfterWin);
-  // Six rows: the winning guess plus five placeholder rows, no input row.
-  expect(rowsAfterWin).toBe(6);
+  // The winning guess, five placeholder rows and the dashed row; no input row.
+  expect(rowsAfterWin).toBe(7);
 });
 
 test("production builds hide New word and Reveal", async () => {

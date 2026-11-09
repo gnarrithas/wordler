@@ -18,33 +18,38 @@ const isDashedRow = (row: Element) =>
   row.children.length > 0 &&
   Array.from(row.children).every((c) => c.classList.contains("border-dashed"));
 
-test("no dashed row before the sixth guess row", () => {
-  renderGrid(4, 8);
-  expect(rows()).toHaveLength(6);
-  expect(rows().some(isDashedRow)).toBe(false);
-});
+const renderOver = () =>
+  render(
+    <Grid
+      guesses={Array(8).fill("ABCDEFG")}
+      currentGuess=""
+      solution="ZYXWVUT"
+      maxGuesses={8}
+      isGameWon={false}
+      isGameOver
+    />,
+  );
 
-test("a dashed row follows the input row from the sixth row on", () => {
-  renderGrid(5, 8);
-  expect(rows()).toHaveLength(7);
-  expect(isDashedRow(rows()[6])).toBe(true);
-  expect(rows().filter(isDashedRow)).toHaveLength(1);
-});
+// The board is six rows plus the dashed row until guesses outgrow it.
+test.each([
+  [0, 8, 7],
+  [4, 8, 7],
+  [5, 8, 7],
+  [6, 8, 8],
+  [7, 8, 9],
+  [5, 6, 7],
+])(
+  "%i guesses of %i: %i rows, exactly one dashed, at the bottom",
+  (guessCount, maxGuesses, rowCount) => {
+    renderGrid(guessCount, maxGuesses);
+    expect(rows()).toHaveLength(rowCount);
+    expect(rows().filter(isDashedRow)).toHaveLength(1);
+    expect(isDashedRow(rows()[rowCount - 1])).toBe(true);
+  },
+);
 
-test("the dashed row keeps moving down as guesses are used", () => {
-  renderGrid(6, 8);
-  expect(rows()).toHaveLength(8);
-  expect(isDashedRow(rows()[7])).toBe(true);
-});
-
-test("no dashed row on the last allowed guess", () => {
-  renderGrid(7, 8);
-  expect(rows()).toHaveLength(8);
-  expect(rows().some(isDashedRow)).toBe(false);
-});
-
-test("no dashed row when only six guesses are allowed", () => {
-  renderGrid(5, 6);
-  expect(rows()).toHaveLength(6);
-  expect(rows().some(isDashedRow)).toBe(false);
+test("the dashed row stays once the game is over", () => {
+  renderOver();
+  expect(rows()).toHaveLength(9);
+  expect(isDashedRow(rows()[8])).toBe(true);
 });
