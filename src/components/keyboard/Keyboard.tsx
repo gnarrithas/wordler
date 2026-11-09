@@ -101,6 +101,18 @@ export const Keyboard = ({
         e.target.removeAttribute("data-mouse-focus");
       }
     };
+    // Space does nothing in the game, but would press a mouse-focused button
+    // (e.g. New word) again; buttons reached by keyboard keep it. Browsers
+    // press on keyup, so both events are cancelled.
+    const onSpace = (e: KeyboardEvent) => {
+      if (
+        (e.key === " " || e.code === "Space") &&
+        isControl(document.activeElement) &&
+        !focusedByKeyboard
+      ) {
+        e.preventDefault();
+      }
+    };
     focusedByKeyboardRef.current = () => focusedByKeyboard;
     // Capture phase, so this runs before focus moves and before any handler
     // that might stop the event.
@@ -109,12 +121,16 @@ export const Keyboard = ({
     document.addEventListener("keydown", onNavigationKey, true);
     document.addEventListener("focusin", onFocusIn, true);
     document.addEventListener("focusout", onFocusOut, true);
+    document.addEventListener("keydown", onSpace, true);
+    document.addEventListener("keyup", onSpace, true);
     return () => {
       document.removeEventListener("pointerdown", onPointerDown, true);
       document.removeEventListener("mousedown", onPointerDown, true);
       document.removeEventListener("keydown", onNavigationKey, true);
       document.removeEventListener("focusin", onFocusIn, true);
       document.removeEventListener("focusout", onFocusOut, true);
+      document.removeEventListener("keydown", onSpace, true);
+      document.removeEventListener("keyup", onSpace, true);
     };
   }, []);
 

@@ -371,6 +371,26 @@ test("Enter on a button reached with the keyboard is left to the button", async 
   expect(inputRow()).toBeInTheDocument();
 });
 
+test("Space never presses a mouse-clicked button again", async () => {
+  await renderGame();
+  const newWord = screen.getByText("New word");
+  mouseClick(newWord);
+  submit("COT");
+  expect(document.activeElement).toBe(newWord);
+  expect(fireEvent.keyDown(newWord, { key: " ", code: "Space" })).toBe(false);
+  expect(fireEvent.keyUp(newWord, { key: " ", code: "Space" })).toBe(false);
+  expect(board().textContent).toBe("COT");
+});
+
+test("Space still presses a button reached with the keyboard", async () => {
+  await renderGame();
+  const newWord = screen.getByText("New word");
+  press("Tab");
+  act(() => newWord.focus());
+  expect(fireEvent.keyDown(newWord, { key: " ", code: "Space" })).toBe(true);
+  expect(fireEvent.keyUp(newWord, { key: " ", code: "Space" })).toBe(true);
+});
+
 test("Enter submits after clicking a button and typing", async () => {
   await renderGame();
   mouseClick(screen.getByText("New word"));
