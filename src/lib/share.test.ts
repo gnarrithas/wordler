@@ -1,4 +1,4 @@
-import { getShareText, getSiteUrl, shareText } from "./share";
+import { copyText, getShareText, getSiteUrl } from "./share";
 
 test("day index 0 is Wordler 1; the header has only the letter count", () => {
   expect(getShareText(0, ["COT", "CAT"], "CAT")).toBe(
@@ -49,7 +49,7 @@ test("the site link is the origin plus the base path", () => {
   expect(getSiteUrl()).toMatch(/^https?:\/\/[^/]+\/(.+\/)?$/);
 });
 
-describe("shareText", () => {
+describe("copyText", () => {
   const originalSecure = window.isSecureContext;
   afterEach(() => {
     Object.defineProperty(window, "isSecureContext", {
@@ -67,18 +67,22 @@ describe("shareText", () => {
       value,
     });
 
-  test("uses the native share sheet when there is one", async () => {
+  test("copies even where a native share sheet exists", async () => {
+    setSecure(true);
     const share = vi.fn().mockResolvedValue(undefined);
     (navigator as any).share = share;
-    await expect(shareText("hi")).resolves.toBe("shared");
-    expect(share).toHaveBeenCalledWith({ text: "hi" });
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    (navigator as any).clipboard = { writeText };
+    await copyText("hi");
+    expect(writeText).toHaveBeenCalledWith("hi");
+    expect(share).not.toHaveBeenCalled();
   });
 
   test("uses the clipboard API in a secure context", async () => {
     setSecure(true);
     const writeText = vi.fn().mockResolvedValue(undefined);
     (navigator as any).clipboard = { writeText };
-    await expect(shareText("hi")).resolves.toBe("copied");
+    await copyText("hi");
     expect(writeText).toHaveBeenCalledWith("hi");
   });
 
@@ -86,8 +90,25 @@ describe("shareText", () => {
     setSecure(false);
     const execCommand = vi.fn().mockReturnValue(true);
     (document as any).execCommand = execCommand;
-    await expect(shareText("hi")).resolves.toBe("copied");
+    await copyText("hi");
     expect(execCommand).toHaveBeenCalledWith("copy");
     expect(document.querySelector("textarea")).toBeNull();
+  });
+
+  test("falls back to execCommand when the clipboard API refuses", async () => {
+    setSecure(true);
+    (navigator as any).clipboard = {
+      writeText: vi.fn().mockRejectedValue(new Error("denied")),
+    };
+    const execCommand = vi.fn().mockReturnValue(true);
+    (document as any).execCommand = execCommand;
+    await copyText("hi");
+    expect(execCommand).toHaveBeenCalledWith("copy");
+  });
+
+  test("fails when no way of copying works", async () => {
+    setSecure(false);
+    (document as any).execCommand = vi.fn().mockReturnValue(false);
+    await expect(copyText("hi")).rejects.toThrow();
   });
 });

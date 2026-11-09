@@ -73,25 +73,17 @@ const copyWithTextarea = (text: string) => {
   }
 };
 
-export type ShareOutcome = "shared" | "copied" | "cancelled";
-
-// Native share sheet where there is one (mobile), else the clipboard.
-export const shareText = async (text: string): Promise<ShareOutcome> => {
-  if (typeof navigator.share === "function") {
+// Always the clipboard, never the system share sheet (which Windows and
+// mobile browsers open for navigator.share). The clipboard API needs a secure
+// context and can be refused; the textarea copy covers both cases.
+export const copyText = async (text: string) => {
+  if (window.isSecureContext && navigator.clipboard?.writeText) {
     try {
-      await navigator.share({ text });
-      return "shared";
+      await navigator.clipboard.writeText(text);
+      return;
     } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") {
-        return "cancelled";
-      }
-      console.warn("Native share failed, copying instead", err);
+      console.warn("Clipboard API refused, copying another way", err);
     }
   }
-  if (window.isSecureContext && navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(text);
-  } else {
-    copyWithTextarea(text);
-  }
-  return "copied";
+  copyWithTextarea(text);
 };

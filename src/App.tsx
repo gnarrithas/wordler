@@ -47,7 +47,7 @@ import {
   startTimer,
 } from "./lib/gameTimer";
 import { getTheme, setTheme, Theme, watchSystemTheme } from "./lib/theme";
-import { countLetters, getShareText, getSiteUrl, shareText } from "./lib/share";
+import { copyText, countLetters, getShareText, getSiteUrl } from "./lib/share";
 import { getWinMessage } from "./lib/winMessage";
 import {
   getRowBounceMs,
@@ -412,15 +412,9 @@ function Game() {
       settings.highContrast,
       getSiteUrl(),
     );
-    let label = "Share";
+    let label = "Copied!";
     try {
-      const outcome = await shareText(text);
-      label =
-        outcome === "copied"
-          ? "Copied!"
-          : outcome === "shared"
-            ? "Shared!"
-            : "Share";
+      await copyText(text);
     } catch (err) {
       console.error("Could not copy share text", err);
       label = "Copy failed";
