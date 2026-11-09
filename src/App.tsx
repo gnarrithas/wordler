@@ -6,7 +6,11 @@ import { Keyboard } from "./components/keyboard/Keyboard";
 import { Logo } from "./components/logo/Logo";
 import { InfoModal } from "./components/modals/InfoModal";
 import { SettingsModal } from "./components/modals/SettingsModal";
-import { MAX_WORD_LENGTH, MIN_WORD_LENGTH } from "./constants/settings";
+import {
+  MAX_WORD_LENGTH,
+  MIN_WORD_LENGTH,
+  PLACEHOLDER,
+} from "./constants/settings";
 import {
   isWordInWordList,
   getWordOfDay,
@@ -299,6 +303,10 @@ function Game() {
       return;
     }
     notePlayerAction();
+
+    if (currentGuess.includes(PLACEHOLDER)) {
+      return showToast(`Replace every ${PLACEHOLDER} first`, ERROR_TOAST_MS);
+    }
 
     if (currentGuess.length < MIN_WORD_LENGTH) {
       return showToast("Not enough letters", ERROR_TOAST_MS);

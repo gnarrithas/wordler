@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { PLACEHOLDER } from "../../constants/settings";
 import { KeyValue } from "../../lib/keyboard";
 import { getStatuses } from "../../lib/statuses";
 import { Key } from "./Key";
@@ -101,9 +102,10 @@ export const Keyboard = ({
         e.target.removeAttribute("data-mouse-focus");
       }
     };
-    // Space does nothing in the game, but would press a mouse-focused button
-    // (e.g. New word) again; buttons reached by keyboard keep it. Browsers
-    // press on keyup, so both events are cancelled.
+    // Space types a placeholder, so it must not also press a mouse-focused
+    // button (e.g. New word) again; buttons reached by keyboard keep it.
+    // Browsers press on keyup, so both events are cancelled, even while
+    // input is disabled.
     const onSpace = (e: KeyboardEvent) => {
       if (
         (e.key === " " || e.code === "Space") &&
@@ -157,6 +159,14 @@ export const Keyboard = ({
         // Keep a mouse-focused button from also activating.
         e.preventDefault();
         latest.onEnter();
+      } else if (e.code === "Space" || e.key === " ") {
+        // A control reached by keyboard keeps Space for its own activation.
+        if (isControl(active) && focusedByKeyboardRef.current()) {
+          return;
+        }
+        // Also keeps the page from scrolling.
+        e.preventDefault();
+        latest.onChar(PLACEHOLDER);
       } else if (e.code === "Backspace" || e.key === "Backspace") {
         // Repeats are allowed so holding Backspace keeps deleting.
         latest.onDelete();

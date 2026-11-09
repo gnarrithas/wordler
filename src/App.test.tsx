@@ -39,7 +39,12 @@ const mouseClick = (el: Element) =>
   });
 
 const press = (key: string) => {
-  const code = key === "Enter" || key === "Backspace" ? key : `Key${key}`;
+  const code =
+    key === "Enter" || key === "Backspace"
+      ? key
+      : key === " "
+        ? "Space"
+        : `Key${key}`;
   act(() => {
     fireEvent.keyDown(target(), { key, code });
     fireEvent.keyUp(target(), { key, code });
@@ -379,7 +384,8 @@ test("Space never presses a mouse-clicked button again", async () => {
   expect(document.activeElement).toBe(newWord);
   expect(fireEvent.keyDown(newWord, { key: " ", code: "Space" })).toBe(false);
   expect(fireEvent.keyUp(newWord, { key: " ", code: "Space" })).toBe(false);
-  expect(board().textContent).toBe("COT");
+  // It types a placeholder instead.
+  expect(board().textContent).toBe("COT_");
 });
 
 test("Space still presses a button reached with the keyboard", async () => {
@@ -389,6 +395,24 @@ test("Space still presses a button reached with the keyboard", async () => {
   act(() => newWord.focus());
   expect(fireEvent.keyDown(newWord, { key: " ", code: "Space" })).toBe(true);
   expect(fireEvent.keyUp(newWord, { key: " ", code: "Space" })).toBe(true);
+  expect(board().textContent).toBe("");
+});
+
+test("Space types a placeholder that blocks submitting", async () => {
+  await renderGame();
+  type("C");
+  press(" ");
+  type("T");
+  expect(board().textContent).toBe("C_T");
+  press("Enter");
+  expect(toast("Replace every _ first")).toBeInTheDocument();
+  expect(board().textContent).toBe("C_T");
+  press("Backspace");
+  press("Backspace");
+  type("AT");
+  press("Enter");
+  expect(board().textContent).toBe("CAT");
+  expect(inputRow()).not.toBeInTheDocument();
 });
 
 test("Enter submits after clicking a button and typing", async () => {
