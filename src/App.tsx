@@ -247,6 +247,13 @@ function Game() {
 
   // Guesses whose tile reveal has finished; the keyboard only colours these.
   const [revealedCount, setRevealedCount] = useState(guesses.length);
+  // Reveal Length: once a revealed guess has the word's length, later rows
+  // mark it.
+  const knownLength =
+    settings.revealLength &&
+    guesses.slice(0, revealedCount).some((g) => g.length === solution.length)
+      ? solution.length
+      : undefined;
 
   useEffect(() => {
     if (guesses.length <= revealedCount) {
@@ -478,6 +485,7 @@ function Game() {
         isGameOver={isGameOver}
         highlightLength={settings.revealLength}
         hint={import.meta.env.DEV && isSolutionShown ? solution : undefined}
+        knownLength={knownLength}
       />
       {/* Always rendered so the board and keyboard do not jump when it appears. */}
       <button

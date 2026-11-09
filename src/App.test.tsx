@@ -589,6 +589,24 @@ test("reveal length outlines a guess of the right length and announces it once",
   expect(screen.getByRole("status")).not.toHaveTextContent("Right length");
 });
 
+test("reveal length dots the boxes past a short word once its length is revealed", async () => {
+  const dotted = () => inputRow()!.querySelectorAll(".border-dotted").length;
+  await renderGame();
+  toggleSetting("Reveal Length");
+  submit("CART");
+  act(() => {
+    vi.advanceTimersByTime(3000);
+  });
+  expect(dotted()).toBe(0);
+  submit("DOG");
+  // Not before the row has flipped.
+  expect(dotted()).toBe(0);
+  act(() => {
+    vi.advanceTimersByTime(3000);
+  });
+  expect(dotted()).toBe(2);
+});
+
 test("without reveal length, nothing is outlined nor announced", async () => {
   await renderGame();
   submit("DOG");
@@ -599,6 +617,7 @@ test("without reveal length, nothing is outlined nor announced", async () => {
     "length-match",
   );
   expect(queryToast("Right length! The word has 3 letters")).toBeNull();
+  expect(inputRow()!.querySelectorAll(".border-dotted")).toHaveLength(0);
 });
 
 test("hard mode rejects guesses that ignore the hints", async () => {

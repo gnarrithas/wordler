@@ -11,6 +11,8 @@ type Props = {
   size?: "md" | "sm";
   // Dashed border for the extra box that hints the row can grow.
   isDashed?: boolean;
+  // Dotted border marking where the known word length differs from five.
+  isDotted?: boolean;
   // Faded letter shown while the box is empty.
   hint?: string;
 };
@@ -21,6 +23,7 @@ export const Cell = ({
   revealDelayMs,
   size = "md",
   isDashed = false,
+  isDotted = false,
   hint,
 }: Props) => {
   const isRevealing = revealDelayMs !== undefined;
@@ -30,7 +33,8 @@ export const Cell = ({
       "w-14 h-14 text-2xl sm:w-16 sm:h-16 sm:text-3xl": size === "md",
       "w-10 h-10 text-xl": size === "sm",
       "border-dashed": isDashed,
-      "border-solid": !isDashed,
+      "border-dotted": isDotted && !isDashed,
+      "border-solid": !isDashed && !isDotted,
       "bg-white dark:bg-wordle-night-bg border-wordle-empty dark:border-wordle-night-empty":
         !status && !value,
       "bg-white dark:bg-wordle-night-bg border-wordle-filled dark:border-wordle-night-filled":

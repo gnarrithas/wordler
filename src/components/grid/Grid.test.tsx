@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { Grid } from "./Grid";
 
 const renderGrid = (guessCount: number, maxGuesses: number) =>
@@ -61,4 +61,67 @@ test("no dashed row once the game is over", () => {
   renderOver();
   expect(rows()).toHaveLength(8);
   expect(rows().some(isDashedRow)).toBe(false);
+});
+
+describe("known length markers", () => {
+  const borders = (row: Element) =>
+    Array.from(row.children).map((c) =>
+      c.classList.contains("border-dotted")
+        ? "."
+        : c.classList.contains("border-dashed")
+          ? "-"
+          : "o",
+    );
+  const renderKnown = (
+    solution: string,
+    currentGuess: string,
+    knownLength?: number,
+  ) =>
+    render(
+      <Grid
+        guesses={["ABC"]}
+        currentGuess={currentGuess}
+        solution={solution}
+        maxGuesses={9}
+        isGameWon={false}
+        isGameOver={false}
+        knownLength={knownLength}
+      />,
+    );
+
+  test("a longer word dots boxes 6 to its length in later rows", () => {
+    renderKnown("ZYXWVUTS", "", 8);
+    const [, current, empty] = rows();
+    expect(borders(current).join("")).toBe("ooooo...");
+    expect(borders(empty).join("")).toBe("ooooo...");
+  });
+
+  test("typed letters fill the dotted boxes; the grow box stays dashed", () => {
+    renderKnown("ZYXWVUTS", "ABCDEF", 8);
+    expect(borders(rows()[1]).join("")).toBe("oooooo..");
+    cleanup();
+    renderKnown("ZYXWVUTS", "ABCDEFGH", 8);
+    expect(borders(rows()[1]).join("")).toBe("oooooooo-");
+  });
+
+  test("a shorter word dots the boxes past its end, up to five", () => {
+    renderKnown("ZYX", "", 3);
+    const [, current, empty] = rows();
+    expect(borders(current).join("")).toBe("ooo..");
+    expect(borders(empty).join("")).toBe("ooo..");
+  });
+
+  test("a five-letter word and an unknown length dot nothing", () => {
+    renderKnown("ZYXWV", "", 5);
+    expect(borders(rows()[2]).join("")).toBe("ooooo");
+    cleanup();
+    renderKnown("ZYXWVUTS", "");
+    expect(borders(rows()[2]).join("")).toBe("ooooo");
+  });
+
+  test("the dashed row stays dashed and spans the length", () => {
+    renderKnown("ZYXWVUTS", "", 8);
+    const last = rows()[rows().length - 1];
+    expect(borders(last).join("")).toBe("--------");
+  });
 });

@@ -120,7 +120,7 @@ export const SettingsModal = ({
                 />
                 <Toggle
                   label="Reveal Length"
-                  description="Rings guesses that match the hidden word's length and announces the length the first time"
+                  description="Rings guesses that match the hidden word's length, announces the length the first time and then marks it with dotted boxes"
                   checked={settings.revealLength}
                   onChange={(v) => onSettingChange("revealLength", v)}
                 />
