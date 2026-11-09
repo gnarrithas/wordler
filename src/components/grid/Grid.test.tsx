@@ -30,14 +30,14 @@ const renderOver = () =>
     />,
   );
 
-// The board is six rows plus the dashed row until guesses outgrow it.
+// Six rows plus the dashed row until guesses outgrow them.
 test.each([
   [0, 8, 7],
   [4, 8, 7],
   [5, 8, 7],
   [6, 8, 8],
-  [7, 8, 9],
-  [5, 6, 7],
+  [0, 6, 7],
+  [4, 6, 7],
 ])(
   "%i guesses of %i: %i rows, exactly one dashed, at the bottom",
   (guessCount, maxGuesses, rowCount) => {
@@ -48,8 +48,17 @@ test.each([
   },
 );
 
-test("the dashed row stays once the game is over", () => {
+test.each([
+  [7, 8],
+  [5, 6],
+])("no dashed row on the last allowed guess (%i of %i)", (count, max) => {
+  renderGrid(count, max);
+  expect(rows()).toHaveLength(max);
+  expect(rows().some(isDashedRow)).toBe(false);
+});
+
+test("no dashed row once the game is over", () => {
   renderOver();
-  expect(rows()).toHaveLength(9);
-  expect(isDashedRow(rows()[8])).toBe(true);
+  expect(rows()).toHaveLength(8);
+  expect(rows().some(isDashedRow)).toBe(false);
 });

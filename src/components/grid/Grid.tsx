@@ -33,9 +33,11 @@ export const Grid = ({
   const empties = Array.from(
     Array(Math.max(0, MIN_GUESSES - guesses.length - (showCurrentRow ? 1 : 0))),
   );
-  // A dashed row always closes the board, hinting that it can grow. Once the
-  // empty rows run out it sits right after the input row.
-  const isDashedRowNext = empties.length === 0;
+  // A dashed row closes the board while a guess after the current one is
+  // still possible, hinting that the board can grow. Once the empty rows run
+  // out it sits right after the input row.
+  const showDashedRow = showCurrentRow && guesses.length + 1 < maxGuesses;
+  const isDashedRowNext = showDashedRow && empties.length === 0;
   const scrollRef = useRef<HTMLDivElement>(null);
   // Only rows added since the last render play the reveal animation.
   const prevCountRef = useRef(guesses.length);
@@ -119,7 +121,7 @@ export const Grid = ({
           {empties.map((_, i) => (
             <EmptyRow key={i} />
           ))}
-          <EmptyRow isDashed />
+          {showDashedRow && <EmptyRow isDashed />}
         </div>
       </div>
     </div>
