@@ -54,6 +54,16 @@ const submit = (word: string) => {
 };
 
 const board = () => screen.getByTestId("board");
+// The input row disappears once the game is over.
+const inputRow = () => screen.queryByRole("group", { name: "Current guess" });
+const hints = () =>
+  screen.queryAllByTestId("hint").map((el) => el.textContent).join("");
+
+const loseGame = () => {
+  for (let i = 0; i < getMaxGuesses("CAT"); i++) {
+    submit("COT");
+  }
+};
 
 // The visible toast; the screen-reader live region repeats its text.
 const TOAST = { selector: '[aria-hidden="true"]' };
@@ -91,6 +101,7 @@ afterEach(() => {
     vi.runOnlyPendingTimers();
   });
   vi.useRealTimers();
+  vi.unstubAllEnvs();
 });
 
 test("renders the board and the letter count once the words load", async () => {
@@ -134,20 +145,50 @@ test("typing after a win changes nothing and the input row is gone", async () =>
   expect(rowsAfterWin).toBe(6);
 });
 
-test("typing after giving up changes nothing", async () => {
+test("production builds hide New word and Reveal", async () => {
+  vi.stubEnv("DEV", false);
   await renderGame();
-  type("CO");
-  fireEvent.click(screen.getByText("Give up"));
-  type("DOG");
+  expect(screen.queryByText("New word")).not.toBeInTheDocument();
+  expect(screen.queryByText("Reveal")).not.toBeInTheDocument();
+  expect(screen.queryByText("Give up")).not.toBeInTheDocument();
+});
+
+test("Reveal shows the answer faded behind the typed letters", async () => {
+  await renderGame();
+  expect(screen.queryByText("Give up")).not.toBeInTheDocument();
+  expect(hints()).toBe("");
+  mouseClick(screen.getByText("Reveal"));
+  expect(screen.getByText("Hide")).toHaveAttribute("aria-pressed", "true");
+  expect(hints()).toBe("CAT");
+  type("C");
+  expect(hints()).toBe("AT");
+  type("OTXY");
+  expect(hints()).toBe("");
+  press("Backspace");
+  press("Backspace");
+  // Revealing does not end the game.
   press("Enter");
-  expect(board().textContent).toBe("");
+  expect(screen.getByRole("group", { name: "Guess: COT" })).toBeInTheDocument();
+  expect(inputRow()).toBeInTheDocument();
+  expect(hints()).toBe("CAT");
+  mouseClick(screen.getByText("Hide"));
+  expect(hints()).toBe("");
+});
+
+test("a revealed answer longer than the row stretches it", async () => {
+  await renderGame();
+  mouseClick(screen.getByText("New word"));
+  mouseClick(screen.getByText("Reveal"));
+  // DOG is short; the row keeps its five boxes, hints in the first three.
+  expect(inputRow()!.children).toHaveLength(5);
+  expect(hints()).toBe("DOG");
 });
 
 test("New word never shows the new answer in the fading toast", async () => {
   await renderGame();
-  fireEvent.click(screen.getByText("Give up"));
+  loseGame();
   act(() => {
-    vi.advanceTimersByTime(10);
+    vi.advanceTimersByTime(5000);
   });
   expect(toast("The word was CAT")).toBeInTheDocument();
   fireEvent.click(screen.getByText("New word"));
@@ -278,9 +319,9 @@ test("numpad Enter submits, a held Enter does not", async () => {
   await renderGame();
   type("CAT");
   keyDown({ key: "Enter", code: "Enter", repeat: true });
-  expect(screen.getByText("Give up")).toBeEnabled();
+  expect(inputRow()).toBeInTheDocument();
   keyDown({ key: "Enter", code: "NumpadEnter" });
-  expect(screen.getByText("Give up")).toBeDisabled();
+  expect(inputRow()).not.toBeInTheDocument();
 });
 
 const waitForModalTransition = () => {
@@ -304,7 +345,7 @@ test("keys do nothing while a modal is open; Enter submits after a mouse close",
   expect(document.activeElement).toBe(screen.getByText("About this game"));
   type("T");
   press("Enter");
-  expect(screen.getByText("Give up")).toBeDisabled();
+  expect(inputRow()).not.toBeInTheDocument();
 });
 
 test("Enter on a button reached with the keyboard is left to the button", async () => {
@@ -316,7 +357,7 @@ test("Enter on a button reached with the keyboard is left to the button", async 
   // Focus came back after a keyboard close, so Enter belongs to the button.
   expect(document.activeElement).toBe(screen.getByText("About this game"));
   press("Enter");
-  expect(screen.getByText("Give up")).toBeEnabled();
+  expect(inputRow()).toBeInTheDocument();
 });
 
 test("Enter submits after clicking a button and typing", async () => {
@@ -343,7 +384,7 @@ test("refreshing mid-game restores the board without a toast", async () => {
   unmount();
   await renderGame();
   expect(board().textContent).toBe("COT");
-  expect(screen.getByText("Give up")).toBeEnabled();
+  expect(inputRow()).toBeInTheDocument();
 });
 
 test("refreshing a finished game restores it with Share and no toast", async () => {
@@ -356,7 +397,7 @@ test("refreshing a finished game restores it with Share and no toast", async () 
   unmount();
   await renderGame();
   expect(board().textContent).toBe("COTCAT");
-  expect(screen.getByText("Give up")).toBeDisabled();
+  expect(inputRow()).not.toBeInTheDocument();
   expect(queryToast("Great!")).not.toBeInTheDocument();
   act(() => {
     vi.advanceTimersByTime(5000);
@@ -466,27 +507,17 @@ test("a won game reports its start and its end", async () => {
 test("running out of guesses reports a loss", async () => {
   await renderGame();
   const max = getMaxGuesses("CAT");
-  for (let i = 0; i < max; i++) {
-    submit("COT");
-  }
+  loseGame();
   expect(eventsNamed("game_end")).toEqual([
     expect.objectContaining({ outcome: "lost", guesses: max }),
   ]);
 });
 
-test("giving up and skipping are reported; an untouched board is not", async () => {
+test("skipping is reported; an untouched board is not", async () => {
   await renderGame();
   mouseClick(screen.getByText("New word"));
   expect(trackEventMock).not.toHaveBeenCalled();
 
-  submit("COT");
-  mouseClick(screen.getByText("Give up"));
-  expect(eventsNamed("game_end")).toEqual([
-    expect.objectContaining({ outcome: "gave_up", guesses: 1, word: "DOG" }),
-  ]);
-
-  trackEventMock.mockClear();
-  mouseClick(screen.getByText("New word"));
   submit("COT");
   submit("CAT");
   mouseClick(screen.getByText("New word"));

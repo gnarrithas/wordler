@@ -169,14 +169,18 @@ export const InfoModal = ({ isOpen, handleClose }: Props) => {
                         <strong>Letters used</strong> adds up every letter you
                         guess. Fewer tries is good; fewer letters is a bonus.
                       </li>
-                      <li>
-                        <strong>New word</strong> starts over with a random
-                        word.
-                      </li>
-                      <li>
-                        <strong>Give up</strong> ends the game and shows the
-                        answer.
-                      </li>
+                      {import.meta.env.DEV && (
+                        <>
+                          <li>
+                            <strong>New word</strong> starts over with a
+                            random word (development only).
+                          </li>
+                          <li>
+                            <strong>Reveal</strong> shows the answer faded in
+                            the row you are typing (development only).
+                          </li>
+                        </>
+                      )}
                       <li>
                         <strong>Share</strong> appears when the game ends and
                         copies a spoiler-free result to your clipboard.

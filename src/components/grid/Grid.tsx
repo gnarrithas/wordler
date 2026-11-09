@@ -13,6 +13,8 @@ type Props = {
   isGameOver: boolean;
   // Reveal Length: ring the guesses that have the answer's length.
   highlightLength?: boolean;
+  // Dev only: letters shown faded in the input row's empty boxes.
+  hint?: string;
 };
 
 export const Grid = ({
@@ -23,6 +25,7 @@ export const Grid = ({
   isGameWon,
   isGameOver,
   highlightLength = false,
+  hint,
 }: Props) => {
   const showCurrentRow = !isGameOver && guesses.length < maxGuesses;
   // The board always starts 6 rows tall; longer words with extra guesses
@@ -115,7 +118,7 @@ export const Grid = ({
               }
             />
           ))}
-          {showCurrentRow && <CurrentRow guess={currentGuess} />}
+          {showCurrentRow && <CurrentRow guess={currentGuess} hint={hint} />}
           {showGrowRow && <EmptyRow isDashed />}
           {empties.map((_, i) => (
             <EmptyRow key={i} />

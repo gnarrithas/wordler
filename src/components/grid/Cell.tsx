@@ -11,6 +11,8 @@ type Props = {
   size?: "md" | "sm";
   // Dashed border for the extra box that hints the row can grow.
   isDashed?: boolean;
+  // Faded letter shown while the box is empty.
+  hint?: string;
 };
 
 export const Cell = ({
@@ -19,6 +21,7 @@ export const Cell = ({
   revealDelayMs,
   size = "md",
   isDashed = false,
+  hint,
 }: Props) => {
   const isRevealing = revealDelayMs !== undefined;
   const classes = classnames(
@@ -56,7 +59,12 @@ export const Cell = ({
       role={status ? "img" : undefined}
       aria-label={status && value ? `${value} ${status}` : undefined}
     >
-      {value}
+      {value ??
+        (hint && (
+          <span className="opacity-25" data-testid="hint">
+            {hint}
+          </span>
+        ))}
     </div>
   );
 };

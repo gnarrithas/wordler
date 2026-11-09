@@ -50,7 +50,11 @@ const ERROR_TOAST_MS = 2000;
 const SHARE_LABEL_MS = 2000;
 const LENGTH_TOAST_MS = 3000;
 
-type GameOutcome = "won" | "lost" | "gave_up" | "skipped";
+// Header buttons that only exist in development builds.
+const DEV_BUTTON_CLASSES =
+  "shrink-0 whitespace-nowrap mr-1 sm:mr-2 px-1.5 sm:px-2.5 py-1.5 text-xs font-medium rounded text-indigo-700 bg-indigo-100 hover:bg-indigo-200 dark:text-indigo-100 dark:bg-indigo-900 dark:hover:bg-indigo-800 dark:focus-visible:ring-offset-wordle-night-bg focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500";
+
+type GameOutcome = "won" | "lost" | "skipped";
 
 // The saved game, unless its word has since left the solution list.
 const loadRestorableGame = (): SavedGame | null => {
@@ -81,6 +85,8 @@ function Game() {
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  // Dev only: the answer shows faded in the input row.
+  const [isSolutionShown, setIsSolutionShown] = useState(false);
   // The answer as it was when revealed, so a fading toast never shows the
   // next word after New word.
   const [revealedAnswer, setRevealedAnswer] = useState(() =>
@@ -351,18 +357,6 @@ function Game() {
     setIsAnswerRevealed(false);
   };
 
-  const onGiveUp = () => {
-    if (isGameOver) {
-      return;
-    }
-    trackGameEnd("gave_up", guesses.length);
-    window.clearTimeout(lengthToastTimerRef.current);
-    setEndAnimationMs(0);
-    setRevealedAnswer(solution);
-    setIsAnswerRevealed(true);
-    setCurrentGuess("");
-  };
-
   const onToggleTheme = () => {
     const next = theme === "dark" ? "light" : "dark";
     setTheme(next);
@@ -403,21 +397,25 @@ function Game() {
       <Alert message={toast.message} isOpen={toast.isOpen} />
       <div className="flex w-full max-w-[28rem] mx-auto items-center mb-4 px-2 sm:px-0">
         <Logo />
-        <button
-          type="button"
-          className="shrink-0 whitespace-nowrap mr-1 sm:mr-2 px-1.5 sm:px-2.5 py-1.5 text-xs font-medium rounded text-indigo-700 bg-indigo-100 hover:bg-indigo-200 dark:text-indigo-100 dark:bg-indigo-900 dark:hover:bg-indigo-800 dark:focus-visible:ring-offset-wordle-night-bg focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500"
-          onClick={onNewWord}
-        >
-          New word
-        </button>
-        <button
-          type="button"
-          className="shrink-0 whitespace-nowrap mr-1 sm:mr-2 px-1.5 sm:px-2.5 py-1.5 text-xs font-medium rounded text-indigo-700 bg-indigo-100 hover:bg-indigo-200 dark:text-indigo-100 dark:bg-indigo-900 dark:hover:bg-indigo-800 dark:focus-visible:ring-offset-wordle-night-bg focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          onClick={onGiveUp}
-          disabled={isGameWon || isAnswerRevealed}
-        >
-          Give up
-        </button>
+        {import.meta.env.DEV && (
+          <>
+            <button
+              type="button"
+              className={DEV_BUTTON_CLASSES}
+              onClick={onNewWord}
+            >
+              New word
+            </button>
+            <button
+              type="button"
+              className={DEV_BUTTON_CLASSES}
+              onClick={() => setIsSolutionShown((shown) => !shown)}
+              aria-pressed={isSolutionShown}
+            >
+              {isSolutionShown ? "Hide" : "Reveal"}
+            </button>
+          </>
+        )}
         <button
           type="button"
           className="shrink-0 mr-1 sm:mr-2"
@@ -446,6 +444,7 @@ function Game() {
         isGameWon={isGameWon}
         isGameOver={isGameOver}
         highlightLength={settings.revealLength}
+        hint={import.meta.env.DEV && isSolutionShown ? solution : undefined}
       />
       {/* Always rendered so the board and keyboard do not jump when it appears. */}
       <button
