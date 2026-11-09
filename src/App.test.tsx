@@ -405,11 +405,11 @@ test("refreshing a finished game restores it with Share and no toast", async () 
   await renderGame();
   expect(board().textContent).toBe("COTCAT");
   expect(inputRow()).not.toBeInTheDocument();
-  expect(queryToast("Great!")).not.toBeInTheDocument();
+  expect(queryToast("Lucky")).not.toBeInTheDocument();
   act(() => {
     vi.advanceTimersByTime(5000);
   });
-  expect(queryToast("Great!")).not.toBeInTheDocument();
+  expect(queryToast("Lucky")).not.toBeInTheDocument();
   expect(screen.getByText("Share")).toBeInTheDocument();
 });
 

@@ -38,6 +38,7 @@ import {
 } from "./lib/gameTimer";
 import { getTheme, setTheme, Theme, watchSystemTheme } from "./lib/theme";
 import { countLetters, getShareText, shareText } from "./lib/share";
+import { getWinMessage } from "./lib/winMessage";
 import {
   getRowBounceMs,
   getRowRevealMs,
@@ -216,7 +217,8 @@ function Game() {
     const revealMs = prefersReducedMotion()
       ? 0
       : getRowRevealMs(winningGuess.length);
-    const timer = setTimeout(() => showToast("Great!", WIN_TOAST_MS), revealMs);
+    const message = getWinMessage(guesses.length, maxGuesses);
+    const timer = setTimeout(() => showToast(message, WIN_TOAST_MS), revealMs);
     return () => clearTimeout(timer);
     // Only (re)schedule when the game is won, not on later guess changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
