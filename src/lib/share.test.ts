@@ -1,4 +1,4 @@
-import { getShareText, shareText } from "./share";
+import { getShareText, getSiteUrl, shareText } from "./share";
 
 test("day index 0 is Wordler 1; the header has only the letter count", () => {
   expect(getShareText(0, ["COT", "CAT"], "CAT")).toBe(
@@ -34,6 +34,19 @@ test("a single letter is singular", () => {
   expect(getShareText(0, ["A"], "CAT").split("\n")[0]).toBe(
     "Wordler 1 · 1 letter",
   );
+});
+
+test("a link, when given, is the last line after a blank one", () => {
+  expect(
+    getShareText(0, ["CAT"], "CAT", false, "https://example.com/wordler/"),
+  ).toBe("Wordler 1 · 3 letters\n\n🟩🟩🟩\n\nhttps://example.com/wordler/");
+});
+
+test("the site link is the origin plus the base path", () => {
+  expect(getSiteUrl()).toBe(
+    new URL(import.meta.env.BASE_URL, window.location.origin).href,
+  );
+  expect(getSiteUrl()).toMatch(/^https?:\/\/[^/]+\/(.+\/)?$/);
 });
 
 describe("shareText", () => {

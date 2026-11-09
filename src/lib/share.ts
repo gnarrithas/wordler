@@ -25,6 +25,7 @@ export const getShareText = (
   guesses: string[],
   solution: string,
   highContrast = false,
+  url?: string,
 ) => {
   const emoji = highContrast ? HIGH_CONTRAST_EMOJI : EMOJI;
   const rows = guesses.map((guess) =>
@@ -38,8 +39,14 @@ export const getShareText = (
   const header = `${title} · ${letters} ${
     letters === 1 ? "letter" : "letters"
   }`;
-  return [header, "", ...rows].join("\n");
+  const footer = url ? ["", url] : [];
+  return [header, "", ...rows, ...footer].join("\n");
 };
+
+// The site root as served (e.g. https://user.github.io/wordler/), so the
+// shared link follows the deployment without hardcoding it.
+export const getSiteUrl = () =>
+  new URL(import.meta.env.BASE_URL, window.location.origin).href;
 
 // Copies through a temporary textarea: the only option outside secure
 // contexts (e.g. plain HTTP on a LAN address), where navigator.clipboard is

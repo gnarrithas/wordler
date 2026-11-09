@@ -110,9 +110,13 @@ afterEach(() => {
 test("renders the board and the letter count once the words load", async () => {
   render(<App />);
   expect(await screen.findByTestId("board")).toBeInTheDocument();
-  expect(screen.getByText(/Total letters used/)).toHaveTextContent("Total letters used: 0");
+  expect(screen.getByText(/Total letters used/)).toHaveTextContent(
+    "Total letters used: 0",
+  );
   submit("COT");
-  expect(screen.getByText(/Total letters used/)).toHaveTextContent("Total letters used: 3");
+  expect(screen.getByText(/Total letters used/)).toHaveTextContent(
+    "Total letters used: 3",
+  );
 });
 
 test("the input row keeps one empty box after five or more letters", async () => {
@@ -373,7 +377,9 @@ test("Enter submits after clicking a button and typing", async () => {
   expect(document.activeElement).toBe(screen.getByText("New word"));
   submit("CAT");
   expect(board().textContent).toBe("CAT");
-  expect(screen.getByText(/Total letters used/)).toHaveTextContent("Total letters used: 3");
+  expect(screen.getByText(/Total letters used/)).toHaveTextContent(
+    "Total letters used: 3",
+  );
 });
 
 test("listeners are attached once, not on every render", async () => {
@@ -436,7 +442,7 @@ test("a dev New word game is restored; in production it is not", async () => {
   expect(board().textContent).toBe("");
 });
 
-test("Share copies the day number (from 1) and letter count", async () => {
+test("Share copies the day number (from 1), letter count and site link", async () => {
   vi.setSystemTime(new Date(2026, 10, 11, 12));
   const writeText = vi.fn().mockResolvedValue(undefined);
   Object.defineProperty(window, "isSecureContext", {
@@ -457,7 +463,8 @@ test("Share copies the day number (from 1) and letter count", async () => {
     fireEvent.click(screen.getByText("Share"));
   });
   expect(writeText).toHaveBeenCalledWith(
-    "Wordler 3 · 6 letters\n\n🟩⬜🟩\n🟩🟩🟩",
+    "Wordler 3 · 6 letters\n\n🟩⬜🟩\n🟩🟩🟩\n\n" +
+      new URL(import.meta.env.BASE_URL, window.location.origin).href,
   );
   delete (navigator as any).clipboard;
 });

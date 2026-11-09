@@ -37,7 +37,7 @@ import {
   startTimer,
 } from "./lib/gameTimer";
 import { getTheme, setTheme, Theme, watchSystemTheme } from "./lib/theme";
-import { countLetters, getShareText, shareText } from "./lib/share";
+import { countLetters, getShareText, getSiteUrl, shareText } from "./lib/share";
 import { getWinMessage } from "./lib/winMessage";
 import {
   getRowBounceMs,
@@ -380,7 +380,13 @@ function Game() {
 
   const onShare = async () => {
     trackEvent("share", { won: isGameWon, length: solution.length });
-    const text = getShareText(day, guesses, solution, settings.highContrast);
+    const text = getShareText(
+      day,
+      guesses,
+      solution,
+      settings.highContrast,
+      getSiteUrl(),
+    );
     let label = "Share";
     try {
       const outcome = await shareText(text);
