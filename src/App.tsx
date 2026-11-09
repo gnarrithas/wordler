@@ -17,7 +17,13 @@ import {
   areWordsLoaded,
   loadWords,
 } from "./lib/words";
-import { loadGame, SavedGame, saveGame } from "./lib/storage";
+import {
+  clearPracticeGame,
+  loadDailyGame,
+  loadPracticeGame,
+  SavedGame,
+  saveGame,
+} from "./lib/storage";
 import { findHardModeViolation } from "./lib/hardMode";
 import {
   applyHighContrast,
@@ -52,24 +58,35 @@ const SHARE_LABEL_MS = 2000;
 const LENGTH_TOAST_MS = 3000;
 
 // Header buttons that only exist in development builds.
-const DEV_BUTTON_CLASSES =
+const HEADER_BUTTON_CLASSES =
   "shrink-0 whitespace-nowrap mr-1 sm:mr-2 px-1.5 sm:px-2.5 py-1.5 text-xs font-medium rounded text-indigo-700 bg-indigo-100 hover:bg-indigo-200 dark:text-indigo-100 dark:bg-indigo-900 dark:hover:bg-indigo-800 dark:focus-visible:ring-offset-wordle-night-bg focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500";
 
 type GameOutcome = "won" | "lost" | "skipped";
 
-// The saved game if it is still today's: a new day (or a redeploy that moved
-// today's word) starts the day's word instead. Dev New word games carry on.
+// The game to resume. An unfinished (or unstarted) daily word comes first, and
+// a new day or a redeploy that moved today's word starts the day's word
+// afresh; any saved New word game is then dropped. Once today's word is
+// finished, a New word game in progress carries on.
 const loadRestorableGame = (): SavedGame | null => {
-  const saved = loadGame();
-  if (!saved || !isSolution(saved.solution)) {
-    return null;
+  const saved = loadDailyGame();
+  const daily =
+    saved &&
+    isSolution(saved.solution) &&
+    saved.day === getDayIndex() &&
+    saved.solution === getWordOfDay(saved.day)
+      ? saved
+      : null;
+  const practice = loadPracticeGame();
+  if (
+    daily &&
+    (daily.isGameWon || daily.isAnswerRevealed) &&
+    practice &&
+    isSolution(practice.solution)
+  ) {
+    return practice;
   }
-  const isCurrent =
-    saved.day === null
-      ? import.meta.env.DEV
-      : saved.day === getDayIndex() &&
-        saved.solution === getWordOfDay(saved.day);
-  return isCurrent ? saved : null;
+  clearPracticeGame();
+  return daily;
 };
 
 function Game() {
@@ -77,7 +94,7 @@ function Game() {
   const isRestoredGameOver = Boolean(
     initialGame && (initialGame.isGameWon || initialGame.isAnswerRevealed),
   );
-  // Index in the daily sequence; null for a dev New word game.
+  // Index in the daily sequence; null for a New word game.
   const [day, setDay] = useState<number | null>(() =>
     initialGame ? initialGame.day : getDayIndex(),
   );
@@ -413,24 +430,22 @@ function Game() {
       <Alert message={toast.message} isOpen={toast.isOpen} />
       <div className="flex w-full max-w-[28rem] mx-auto items-center mb-4 px-2 sm:px-0">
         <Logo />
+        <button
+          type="button"
+          className={HEADER_BUTTON_CLASSES}
+          onClick={onNewWord}
+        >
+          New word
+        </button>
         {import.meta.env.DEV && (
-          <>
-            <button
-              type="button"
-              className={DEV_BUTTON_CLASSES}
-              onClick={onNewWord}
-            >
-              New word
-            </button>
-            <button
-              type="button"
-              className={DEV_BUTTON_CLASSES}
-              onClick={() => setIsSolutionShown((shown) => !shown)}
-              aria-pressed={isSolutionShown}
-            >
-              {isSolutionShown ? "Hide" : "Reveal"}
-            </button>
-          </>
+          <button
+            type="button"
+            className={HEADER_BUTTON_CLASSES}
+            onClick={() => setIsSolutionShown((shown) => !shown)}
+            aria-pressed={isSolutionShown}
+          >
+            {isSolutionShown ? "Hide" : "Reveal"}
+          </button>
         )}
         <button
           type="button"

@@ -5,11 +5,14 @@ export type SavedGame = {
   guesses: string[];
   isGameWon: boolean;
   isAnswerRevealed: boolean;
-  // Daily sequence index, or null for a dev New word game.
+  // Daily sequence index, or null for a New word game.
   day: number | null;
 };
 
-const STORAGE_KEY = "game";
+// The daily game and a New word game are kept apart, so playing a random
+// word never overwrites today's progress or result.
+const DAILY_KEY = "game";
+const PRACTICE_KEY = "practice";
 
 const isSavedGame = (value: unknown): value is SavedGame => {
   if (typeof value !== "object" || value === null) {
@@ -28,9 +31,9 @@ const isSavedGame = (value: unknown): value is SavedGame => {
   );
 };
 
-export const loadGame = (): SavedGame | null => {
+const loadFrom = (key: string): SavedGame | null => {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(key);
     if (raw === null) {
       return null;
     }
@@ -46,10 +49,31 @@ export const loadGame = (): SavedGame | null => {
   }
 };
 
+export const loadDailyGame = () => {
+  const game = loadFrom(DAILY_KEY);
+  return game && game.day !== null ? game : null;
+};
+
+export const loadPracticeGame = () => {
+  const game = loadFrom(PRACTICE_KEY);
+  return game && game.day === null ? game : null;
+};
+
 export const saveGame = (game: SavedGame) => {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(game));
+    localStorage.setItem(
+      game.day === null ? PRACTICE_KEY : DAILY_KEY,
+      JSON.stringify(game),
+    );
   } catch (err) {
     console.warn("Could not save game", err);
+  }
+};
+
+export const clearPracticeGame = () => {
+  try {
+    localStorage.removeItem(PRACTICE_KEY);
+  } catch (err) {
+    console.warn("Could not clear saved New word game", err);
   }
 };

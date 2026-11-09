@@ -152,10 +152,10 @@ test("typing after a win changes nothing and the input row is gone", async () =>
   expect(rowsAfterWin).toBe(6);
 });
 
-test("production builds hide New word and Reveal", async () => {
+test("production builds keep New word but hide Reveal", async () => {
   vi.stubEnv("DEV", false);
   await renderGame();
-  expect(screen.queryByText("New word")).not.toBeInTheDocument();
+  expect(screen.getByText("New word")).toBeInTheDocument();
   expect(screen.queryByText("Reveal")).not.toBeInTheDocument();
   expect(screen.queryByText("Give up")).not.toBeInTheDocument();
 });
@@ -429,17 +429,54 @@ test("a game saved on an earlier day gives way to today's word", async () => {
   expect(board().textContent).toBe("");
 });
 
-test("a dev New word game is restored; in production it is not", async () => {
+test("New word mid-daily: a reload returns to the unfinished daily", async () => {
   const { unmount } = await renderGame();
+  submit("COT");
+  mouseClick(screen.getByText("New word"));
+  submit("DOG");
+  unmount();
+  await renderGame();
+  expect(board().textContent).toBe("COT");
+  expect(inputRow()).toBeInTheDocument();
+});
+
+test("after the daily, a New word game survives a reload", async () => {
+  const { unmount } = await renderGame();
+  submit("CAT");
+  act(() => {
+    vi.runOnlyPendingTimers();
+  });
   mouseClick(screen.getByText("New word"));
   submit("COT");
   unmount();
-  const second = await renderGame();
-  expect(board().textContent).toBe("COT");
-  second.unmount();
-  vi.stubEnv("DEV", false);
   await renderGame();
+  expect(board().textContent).toBe("COT");
+  expect(inputRow()).toBeInTheDocument();
+});
+
+test("a New word game from an earlier day never comes back", async () => {
+  vi.setSystemTime(new Date(2026, 10, 9, 12));
+  const first = await renderGame();
+  submit("CAT");
+  act(() => {
+    vi.runOnlyPendingTimers();
+  });
+  mouseClick(screen.getByText("New word"));
+  submit("DOG");
+  first.unmount();
+  // The next day starts its daily word and drops the old New word game...
+  vi.setSystemTime(new Date(2026, 10, 10, 12));
+  const second = await renderGame();
   expect(board().textContent).toBe("");
+  submit("CAT");
+  act(() => {
+    vi.runOnlyPendingTimers();
+  });
+  second.unmount();
+  // ...so finishing that daily shows its result, not the stale game.
+  await renderGame();
+  expect(board().textContent).toBe("CAT");
+  expect(inputRow()).not.toBeInTheDocument();
 });
 
 test("Share copies the day number (from 1), letter count and site link", async () => {
