@@ -3,14 +3,14 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
-  # Daily redeploy publishing the next day's word (scripts/shuffle_solutions.py
-  # writes days up to tomorrow, UTC). UTC+14 reaches tomorrow at 10:00 UTC, so
-  # the second run is a retry well inside that window. Schedules run from the
-  # default branch, and GitHub disables them after 60 days without commits in
-  # a public repo.
+  # Daily redeploy publishing the new UTC day's word (scripts/shuffle_solutions.py
+  # writes days up to today, UTC, never tomorrow). Players east of UTC keep
+  # yesterday's word until it lands, so it runs just after midnight with a
+  # retry an hour later. Schedules run from the default branch, and GitHub
+  # disables them after 60 days without commits in a public repo.
   schedule:
     - cron: "7 0 * * *"
-    - cron: "7 5 * * *"
+    - cron: "7 1 * * *"
   workflow_dispatch:
 
 permissions:
@@ -37,7 +37,7 @@ jobs:
       - run: npm run build
         env:
           BASE_PATH: /${{ github.event.repository.name }}/
-      # Today's and tomorrow's words, never later ones; fails the deploy if
+      # Words up to today (UTC), never tomorrow's; fails the deploy if
       # the secret is missing.
       - run: python3 scripts/shuffle_solutions.py public/words/solutions.txt build/words/daily.txt
         env:

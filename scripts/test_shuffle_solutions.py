@@ -45,21 +45,21 @@ class ShuffleTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             s.shuffle(WORDS, "")
 
-    def test_daily_words_stop_at_tomorrow(self):
+    def test_daily_words_stop_at_today(self):
         order = s.shuffle(WORDS, "test-seed")
         first = s.FIRST_DAY
-        self.assertEqual(s.daily_words(WORDS, "test-seed", first), order[:2])
+        self.assertEqual(s.daily_words(WORDS, "test-seed", first), order[:1])
         later = first + dt.timedelta(days=3)
-        self.assertEqual(s.daily_words(WORDS, "test-seed", later), order[:5])
-        # Before the first day, still days 0 and 1.
+        self.assertEqual(s.daily_words(WORDS, "test-seed", later), order[:4])
+        # Before the first day, still day 0.
         early = first - dt.timedelta(days=30)
-        self.assertEqual(s.daily_words(WORDS, "test-seed", early), order[:2])
+        self.assertEqual(s.daily_words(WORDS, "test-seed", early), order[:1])
 
     def test_daily_words_wrap_past_the_end(self):
         order = s.shuffle(WORDS, "test-seed")
         day_9 = s.FIRST_DAY + dt.timedelta(days=9)
         self.assertEqual(
-            s.daily_words(WORDS, "test-seed", day_9), order + order[:3]
+            s.daily_words(WORDS, "test-seed", day_9), order + order[:2]
         )
 
     def test_main_writes_the_daily_list_and_requires_the_seed(self):
@@ -73,7 +73,7 @@ class ShuffleTest(unittest.TestCase):
             self.assertFalse(output.exists())
             with mock.patch.dict(os.environ, {s.SEED_ENV: "test-seed"}):
                 self.assertEqual(s.main(args), 0)
-            expected = s.shuffle(WORDS, "test-seed")[:3]
+            expected = s.shuffle(WORDS, "test-seed")[:2]
             self.assertEqual(output.read_text(), "\n".join(expected) + "\n")
             # The source list is left alone.
             self.assertEqual(source.read_text(), "\n".join(WORDS))

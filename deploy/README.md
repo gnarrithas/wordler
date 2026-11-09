@@ -20,15 +20,18 @@ plugin): the Dockerfile uses a cache mount, a build secret and
 
 The build writes `/words/daily.txt` with `scripts/shuffle_solutions.py`: the
 solutions shuffled by `SOLUTIONS_SHUFFLE_SEED` (a build secret, so it stays
-out of the image), for every day up to the day after `WORDS_DAY` (UTC). Later
-words are never published. The build fails without the seed. Use the same
-seed as the GitHub Pages deploy so both serve the same daily word.
+out of the image), for every day up to `WORDS_DAY` (UTC). Tomorrow's word is
+never published. The build fails without the seed. Use the same seed as the
+GitHub Pages deploy so both serve the same daily word.
 
-So the image must be **rebuilt every day**, before 10:00 UTC (when UTC+14
-reaches the next day). A host crontab entry, twice for a retry:
+The game asks for the earlier of the player's date and the UTC date, so the
+word changes at local midnight west of UTC and at 00:00 UTC east of it. The
+image must therefore be **rebuilt every day just after 00:00 UTC**; until
+then, players east of UTC stay on yesterday's word. A host crontab entry,
+twice for a retry:
 
 ```cron
-7 0,5 * * * cd /path/to/repo/deploy && WORDS_DAY=$(date -u +\%F) docker compose up -d --build wordle >> /var/log/wordler-daily.log 2>&1
+7 0,1 * * * cd /path/to/repo/deploy && WORDS_DAY=$(date -u +\%F) docker compose up -d --build wordle >> /var/log/wordler-daily.log 2>&1
 ```
 
 `WORDS_DAY` is part of the build cache key; without it a rebuild may reuse an
@@ -37,7 +40,7 @@ word until the next rebuild.
 
 - `GET /healthz` returns `ok` for load-balancer and container health checks.
 - Hashed assets under `/assets/` are cached for a year; the word lists under
-  `/words/` for an hour; `index.html` is always revalidated, so a redeploy is
+  `/words/` for an hour, except `daily.txt`, which is always revalidated; `index.html` is always revalidated, so a redeploy is
   picked up on the next page load.
 
 ## Production stack with analytics

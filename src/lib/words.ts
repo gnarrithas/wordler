@@ -13,7 +13,7 @@ type WordLists = {
   guessSet: Set<string>;
   shortest: number;
   longest: number;
-  // Line N is day N's word. Deploys publish it daily, up to tomorrow only.
+  // Line N is day N's word. Deploys publish it daily, up to today (UTC) only.
   daily: string[];
 };
 
@@ -118,12 +118,19 @@ export const isWordInWordList = (word: string) => {
 export const isSolution = (word: string) =>
   getLists().solutionSet.has(word.toLowerCase());
 
-// Days since the first day, by the player's own calendar date, so the word
-// changes at local midnight. Clocks set before the first day get day 0, and
+// Days since the first day, by the earlier of the player's calendar date and
+// the UTC date. Deploys publish words up to the UTC date only, so tomorrow's
+// word is never public: the word changes at local midnight west of UTC, and
+// at UTC midnight east of it. Clocks set before the first day get day 0, and
 // clocks set past the last published day get that day.
 export const getDayIndex = (now = new Date()) => {
-  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
-  const day = Math.round((today - FIRST_DAY_UTC) / MS_IN_DAY);
+  const local = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  const utc = Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate(),
+  );
+  const day = Math.round((Math.min(local, utc) - FIRST_DAY_UTC) / MS_IN_DAY);
   return Math.min(Math.max(0, day), getLists().daily.length - 1);
 };
 

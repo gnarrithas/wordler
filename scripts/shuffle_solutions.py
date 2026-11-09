@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Write the daily word list: the shuffled solutions, up to tomorrow only.
+"""Write the daily word list: the shuffled solutions, up to today only.
 
 Deploys run this daily after the build. Line N of the output is day N's word,
-day 0 being FIRST_DAY. The list stops at tomorrow (UTC), which covers every
-time zone's current date, so future words are never published.
+day 0 being FIRST_DAY. The list stops at today (UTC), so tomorrow's word is
+never published; the game never asks for a day past the UTC date (see
+getDayIndex in src/lib/words.ts).
 
 The shuffle depends only on the seed and the set of words. It uses
 HMAC-SHA256 in counter mode as its random stream and an exact rejection
@@ -23,8 +24,6 @@ from pathlib import Path
 SEED_ENV = "SOLUTIONS_SHUFFLE_SEED"
 # Must match FIRST_DAY_UTC in src/lib/words.ts.
 FIRST_DAY = dt.date(2026, 11, 9)
-# Days past today (UTC) to publish: UTC+14 is up to a day ahead of UTC.
-DAYS_AHEAD = 1
 
 log = logging.getLogger("shuffle_solutions")
 
@@ -76,11 +75,11 @@ def shuffle(words, seed: str):
 
 
 def daily_words(words, seed: str, today: dt.date):
-    """Words for day 0 through tomorrow; the shuffle wraps if it runs out."""
+    """Words for day 0 through today; the shuffle wraps if it runs out."""
     order = shuffle(words, seed)
     if not order:
         return []
-    last_day = max(0, (today - FIRST_DAY).days) + DAYS_AHEAD
+    last_day = max(0, (today - FIRST_DAY).days)
     return [order[day % len(order)] for day in range(last_day + 1)]
 
 
@@ -98,7 +97,7 @@ def parse_args(argv):
     parser.add_argument(
         "--today",
         type=parse_date,
-        help="UTC date to publish through tomorrow of (default: now)",
+        help="last UTC date to publish (default: today)",
     )
     return parser.parse_args(argv)
 

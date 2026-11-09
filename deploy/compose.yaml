@@ -32,7 +32,7 @@ services:
       dockerfile: deploy/Dockerfile
       secrets:
         - SOLUTIONS_SHUFFLE_SEED
-      # The day the image publishes words up to (plus one); rebuild daily
+      # The last day the image publishes a word for; rebuild daily
       # with WORDS_DAY=$(date -u +%F), see README.md.
       args:
         WORDS_DAY: ${WORDS_DAY:-}

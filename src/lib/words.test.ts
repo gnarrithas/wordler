@@ -15,18 +15,51 @@ const WORDS = solutionsText.split("\n").filter(Boolean);
 
 beforeAll(() => setWordLists(solutionsText, read("guesses.txt")));
 
-// Local dates: the day index follows the player's calendar.
+// Local dates, in whichever zone the test sets.
 const at = (y: number, m: number, d: number, h = 12) =>
   new Date(y, m - 1, d, h);
 
-test("9 November 2026 is day 0 and each local day adds one", () => {
-  expect(getDayIndex(at(2026, 11, 9, 0))).toBe(0);
-  expect(getDayIndex(at(2026, 11, 9, 23))).toBe(0);
-  expect(getDayIndex(at(2026, 11, 10, 0))).toBe(1);
-  expect(getDayIndex(at(2027, 1, 1))).toBe(53);
+// Node re-reads TZ whenever it changes.
+const ORIGINAL_TZ = process.env.TZ;
+const inZone = (tz: string, check: () => void) => {
+  process.env.TZ = tz;
+  try {
+    check();
+  } finally {
+    process.env.TZ = ORIGINAL_TZ;
+  }
+};
+
+test("9 November 2026 is day 0 and each day adds one", () => {
+  inZone("UTC", () => {
+    expect(getDayIndex(at(2026, 11, 9, 0))).toBe(0);
+    expect(getDayIndex(at(2026, 11, 9, 23))).toBe(0);
+    expect(getDayIndex(at(2026, 11, 10, 0))).toBe(1);
+    expect(getDayIndex(at(2027, 1, 1))).toBe(53);
+    expect(getDayIndex(at(2030, 2, 21))).toBe(1200);
+  });
   // Across a daylight-saving change the count stays whole days.
-  expect(getDayIndex(at(2027, 4, 1))).toBe(143);
-  expect(getDayIndex(at(2030, 2, 21))).toBe(1200);
+  inZone("America/New_York", () => {
+    expect(getDayIndex(at(2027, 4, 1))).toBe(143);
+  });
+});
+
+test("west of UTC the word changes at local midnight", () => {
+  inZone("America/Los_Angeles", () => {
+    // 08:00 UTC on the 10th, still the 9th locally.
+    expect(getDayIndex(at(2026, 11, 9, 0))).toBe(0);
+    expect(getDayIndex(at(2026, 11, 9, 23))).toBe(0);
+    expect(getDayIndex(at(2026, 11, 10, 0))).toBe(1);
+  });
+});
+
+test("east of UTC the word changes at UTC midnight, never sooner", () => {
+  inZone("Pacific/Kiritimati", () => {
+    // UTC+14: 10 November local is still 9 November UTC until 14:00.
+    expect(getDayIndex(at(2026, 11, 10, 0))).toBe(0);
+    expect(getDayIndex(at(2026, 11, 10, 13))).toBe(0);
+    expect(getDayIndex(at(2026, 11, 10, 14))).toBe(1);
+  });
 });
 
 test("a clock set before the first day gets day 0", () => {
@@ -44,9 +77,11 @@ describe("with a published daily list", () => {
   test("day N plays line N, and days past the list stay on its last line", () => {
     setWordLists(solutionsText, "", "cat\ndog\n");
     expect(getWordOfDay(0)).toBe("CAT");
-    expect(getDayIndex(at(2026, 11, 10))).toBe(1);
-    expect(getDayIndex(at(2027, 6, 1))).toBe(1);
-    expect(getWordOfDay(getDayIndex(at(2027, 6, 1)))).toBe("DOG");
+    inZone("UTC", () => {
+      expect(getDayIndex(at(2026, 11, 10))).toBe(1);
+      expect(getDayIndex(at(2027, 6, 1))).toBe(1);
+      expect(getWordOfDay(getDayIndex(at(2027, 6, 1)))).toBe("DOG");
+    });
   });
 
   test("a daily list that is empty or not solutions is refused", () => {
