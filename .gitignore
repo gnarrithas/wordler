@@ -24,3 +24,5 @@ yarn-error.log*
 
 # compose secrets
 /deploy/.env
+
+__pycache__/

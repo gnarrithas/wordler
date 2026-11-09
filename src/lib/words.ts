@@ -1,11 +1,8 @@
 import { MIN_GUESSES } from "../constants/settings";
 
-// January 1, 2022 game epoch.
-const EPOCH_MS = 1641013200000;
 const MS_IN_DAY = 86400000;
-// Fixed seed: every player gets the same daily sequence. Changing it reshuffles
-// all future (and past) daily words.
-const DAILY_SEED = 0x5eed2022;
+// Day 0 of the daily sequence: 9 November 2026 (months count from 0).
+const FIRST_DAY_UTC = Date.UTC(2026, 10, 9);
 
 // The word lists are served as plain text from public/words/ and fetched at
 // startup instead of being bundled into the JavaScript.
@@ -15,8 +12,6 @@ type WordLists = {
   guessSet: Set<string>;
   shortest: number;
   longest: number;
-  // Stable shuffle of solution indexes for the daily word.
-  dailyOrder: number[];
 };
 
 let lists: WordLists | undefined;
@@ -27,26 +22,6 @@ const parseList = (text: string) =>
     .split(/\r?\n/)
     .map((word) => word.trim().toLowerCase())
     .filter((word) => word.length > 0);
-
-// mulberry32: a tiny deterministic PRNG returning floats in [0, 1).
-const mulberry32 = (seed: number) => () => {
-  seed = (seed + 0x6d2b79f5) | 0;
-  let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-};
-
-// A stable Fisher-Yates permutation, so daily words do not walk through the
-// list alphabetically.
-const shuffledIndexes = (length: number) => {
-  const random = mulberry32(DAILY_SEED);
-  const order = Array.from({ length }, (_, i) => i);
-  for (let i = order.length - 1; i > 0; i--) {
-    const j = Math.floor(random() * (i + 1));
-    [order[i], order[j]] = [order[j], order[i]];
-  }
-  return order;
-};
 
 // Installs the lists from their file contents (also used by tests).
 export const setWordLists = (solutionsText: string, guessesText: string) => {
@@ -66,7 +41,6 @@ export const setWordLists = (solutionsText: string, guessesText: string) => {
     guessSet: new Set(parseList(guessesText)),
     shortest,
     longest,
-    dailyOrder: shuffledIndexes(solutions.length),
   };
 };
 
@@ -125,13 +99,18 @@ export const isWordInWordList = (word: string) => {
 export const isSolution = (word: string) =>
   getLists().solutionSet.has(word.toLowerCase());
 
-export const getWordOfDay = (now = Date.now()) => {
-  const { solutions, dailyOrder } = getLists();
-  const day = Math.floor((now - EPOCH_MS) / MS_IN_DAY);
-  // Clamp into range even for clocks set before the epoch.
-  const n = dailyOrder.length;
-  const index = ((day % n) + n) % n;
-  return solutions[dailyOrder[index]].toUpperCase();
+// Days since the first day, by the player's own calendar date, so the word
+// changes at local midnight. Clocks set before the first day get day 0.
+export const getDayIndex = (now = new Date()) => {
+  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.max(0, Math.round((today - FIRST_DAY_UTC) / MS_IN_DAY));
+};
+
+// The deployed solutions.txt is already in daily order (see
+// scripts/shuffle_solutions.py): day N plays line N, wrapping at the end.
+export const getWordOfDay = (day = getDayIndex()) => {
+  const { solutions } = getLists();
+  return solutions[day % solutions.length].toUpperCase();
 };
 
 export const getRandomWord = (exclude: string) => {

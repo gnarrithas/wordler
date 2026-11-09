@@ -1,6 +1,7 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 import {
+  getDayIndex,
   getSolutionLengthRange,
   getWordOfDay,
   isWordInWordList,
@@ -14,28 +15,28 @@ const WORDS = solutionsText.split("\n").filter(Boolean);
 
 beforeAll(() => setWordLists(solutionsText, read("guesses.txt")));
 
-const DAY = 86400000;
-const NOON_2026 = Date.UTC(2026, 10, 8, 12);
+// Local dates: the day index follows the player's calendar.
+const at = (y: number, m: number, d: number, h = 12) =>
+  new Date(y, m - 1, d, h);
 
-test("consecutive days give words that are not neighbours in the list", () => {
-  const indexes = Array.from({ length: 30 }, (_, i) =>
-    WORDS.indexOf(getWordOfDay(NOON_2026 + i * DAY).toLowerCase()),
-  );
-  indexes.forEach((index) => expect(index).toBeGreaterThanOrEqual(0));
-  const adjacent = indexes
-    .slice(1)
-    .filter((index, i) => Math.abs(index - indexes[i]) <= 1);
-  expect(adjacent).toEqual([]);
-  expect(new Set(indexes).size).toBe(indexes.length);
+test("9 November 2026 is day 0 and each local day adds one", () => {
+  expect(getDayIndex(at(2026, 11, 9, 0))).toBe(0);
+  expect(getDayIndex(at(2026, 11, 9, 23))).toBe(0);
+  expect(getDayIndex(at(2026, 11, 10, 0))).toBe(1);
+  expect(getDayIndex(at(2027, 1, 1))).toBe(53);
+  // Across a daylight-saving change the count stays whole days.
+  expect(getDayIndex(at(2027, 4, 1))).toBe(143);
+  expect(getDayIndex(at(2030, 2, 21))).toBe(1200);
 });
 
-test("the daily word is stable for a given day", () => {
-  expect(getWordOfDay(NOON_2026)).toBe(getWordOfDay(NOON_2026 + 1000));
+test("a clock set before the first day gets day 0", () => {
+  expect(getDayIndex(at(2021, 6, 1))).toBe(0);
 });
 
-test("a clock set before the 2022 epoch still returns a word", () => {
-  const word = getWordOfDay(Date.UTC(2021, 5, 1));
-  expect(WORDS).toContain(word.toLowerCase());
+test("day N plays line N of the deployed list, wrapping at the end", () => {
+  expect(getWordOfDay(0)).toBe(WORDS[0].toUpperCase());
+  expect(getWordOfDay(1)).toBe(WORDS[1].toUpperCase());
+  expect(getWordOfDay(WORDS.length + 2)).toBe(WORDS[2].toUpperCase());
 });
 
 test("lookups are case-insensitive and cover both lists", () => {

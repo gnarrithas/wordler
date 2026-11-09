@@ -16,12 +16,14 @@ const HIGH_CONTRAST_EMOJI: Record<CharStatus, string> = {
 export const countLetters = (guesses: string[]) =>
   guesses.reduce((total, guess) => total + guess.length, 0);
 
-// Spoiler-free result: a score line followed by one emoji row per guess. The
-// guess limit is left out because it would give away the word's length.
+// Result: "Wordler <day> · <guesses>/<limit> · <letters>", then one emoji
+// row per guess. Games off the daily sequence (dev New word) have no day.
 export const getShareText = (
+  day: number | null,
   guesses: string[],
   solution: string,
   isGameWon: boolean,
+  maxGuesses: number,
   highContrast = false,
 ) => {
   const emoji = highContrast ? HIGH_CONTRAST_EMOJI : EMOJI;
@@ -32,7 +34,9 @@ export const getShareText = (
       .join(""),
   );
   const letters = countLetters(guesses);
-  const header = `Wordler ${score} · ${letters} ${
+  const title =
+    day === null ? "Wordler" : `Wordler ${day.toLocaleString("en-US")}`;
+  const header = `${title} · ${score}/${maxGuesses} · ${letters} ${
     letters === 1 ? "letter" : "letters"
   }`;
   return [header, "", ...rows].join("\n");

@@ -57,7 +57,10 @@ const board = () => screen.getByTestId("board");
 // The input row disappears once the game is over.
 const inputRow = () => screen.queryByRole("group", { name: "Current guess" });
 const hints = () =>
-  screen.queryAllByTestId("hint").map((el) => el.textContent).join("");
+  screen
+    .queryAllByTestId("hint")
+    .map((el) => el.textContent)
+    .join("");
 
 const loseGame = () => {
   for (let i = 0; i < getMaxGuesses("CAT"); i++) {
@@ -404,6 +407,55 @@ test("refreshing a finished game restores it with Share and no toast", async () 
   });
   expect(queryToast("Great!")).not.toBeInTheDocument();
   expect(screen.getByText("Share")).toBeInTheDocument();
+});
+
+test("a game saved on an earlier day gives way to today's word", async () => {
+  vi.setSystemTime(new Date(2026, 10, 9, 23, 0));
+  const { unmount } = await renderGame();
+  submit("COT");
+  unmount();
+  vi.setSystemTime(new Date(2026, 10, 10, 0, 30));
+  await renderGame();
+  expect(board().textContent).toBe("");
+});
+
+test("a dev New word game is restored; in production it is not", async () => {
+  const { unmount } = await renderGame();
+  mouseClick(screen.getByText("New word"));
+  submit("COT");
+  unmount();
+  const second = await renderGame();
+  expect(board().textContent).toBe("COT");
+  second.unmount();
+  vi.stubEnv("DEV", false);
+  await renderGame();
+  expect(board().textContent).toBe("");
+});
+
+test("Share copies the day number, score and letter count", async () => {
+  vi.setSystemTime(new Date(2026, 10, 11, 12));
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(window, "isSecureContext", {
+    configurable: true,
+    value: true,
+  });
+  Object.defineProperty(navigator, "clipboard", {
+    configurable: true,
+    value: { writeText },
+  });
+  await renderGame();
+  submit("COT");
+  submit("CAT");
+  act(() => {
+    vi.runOnlyPendingTimers();
+  });
+  await act(async () => {
+    fireEvent.click(screen.getByText("Share"));
+  });
+  expect(writeText).toHaveBeenCalledWith(
+    `Wordler 2 · 2/${getMaxGuesses("CAT")} · 6 letters\n\n🟩⬜🟩\n🟩🟩🟩`,
+  );
+  delete (navigator as any).clipboard;
 });
 
 test("a saved word that left the solution list is discarded", async () => {

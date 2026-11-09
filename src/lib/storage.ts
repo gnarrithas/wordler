@@ -5,6 +5,8 @@ export type SavedGame = {
   guesses: string[];
   isGameWon: boolean;
   isAnswerRevealed: boolean;
+  // Daily sequence index, or null for a dev New word game.
+  day: number | null;
 };
 
 const STORAGE_KEY = "game";
@@ -20,7 +22,9 @@ const isSavedGame = (value: unknown): value is SavedGame => {
     Array.isArray(game.guesses) &&
     game.guesses.every((guess) => typeof guess === "string") &&
     typeof game.isGameWon === "boolean" &&
-    typeof game.isAnswerRevealed === "boolean"
+    typeof game.isAnswerRevealed === "boolean" &&
+    (game.day === null ||
+      (typeof game.day === "number" && Number.isInteger(game.day)))
   );
 };
 

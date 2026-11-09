@@ -11,6 +11,7 @@ import { MAX_WORD_LENGTH, MIN_WORD_LENGTH } from "./constants/settings";
 import {
   isWordInWordList,
   getWordOfDay,
+  getDayIndex,
   getRandomWord,
   getMaxGuesses,
   isSolution,
@@ -56,10 +57,19 @@ const DEV_BUTTON_CLASSES =
 
 type GameOutcome = "won" | "lost" | "skipped";
 
-// The saved game, unless its word has since left the solution list.
+// The saved game if it is still today's: a new day (or a redeploy that moved
+// today's word) starts the day's word instead. Dev New word games carry on.
 const loadRestorableGame = (): SavedGame | null => {
   const saved = loadGame();
-  return saved && isSolution(saved.solution) ? saved : null;
+  if (!saved || !isSolution(saved.solution)) {
+    return null;
+  }
+  const isCurrent =
+    saved.day === null
+      ? import.meta.env.DEV
+      : saved.day === getDayIndex() &&
+        saved.solution === getWordOfDay(saved.day);
+  return isCurrent ? saved : null;
 };
 
 function Game() {
@@ -67,8 +77,12 @@ function Game() {
   const isRestoredGameOver = Boolean(
     initialGame && (initialGame.isGameWon || initialGame.isAnswerRevealed),
   );
+  // Index in the daily sequence; null for a dev New word game.
+  const [day, setDay] = useState<number | null>(() =>
+    initialGame ? initialGame.day : getDayIndex(),
+  );
   const [solution, setSolution] = useState(
-    () => initialGame?.solution ?? getWordOfDay(),
+    () => initialGame?.solution ?? getWordOfDay(day ?? 0),
   );
   const [guesses, setGuesses] = useState<string[]>(
     () => initialGame?.guesses ?? [],
@@ -134,8 +148,8 @@ function Game() {
   }, []);
 
   useEffect(() => {
-    saveGame({ solution, guesses, isGameWon, isAnswerRevealed });
-  }, [solution, guesses, isGameWon, isAnswerRevealed]);
+    saveGame({ solution, guesses, isGameWon, isAnswerRevealed, day });
+  }, [solution, guesses, isGameWon, isAnswerRevealed, day]);
 
   useEffect(
     () => () => {
@@ -351,6 +365,7 @@ function Game() {
     window.clearTimeout(lengthToastTimerRef.current);
     setShareLabel("Share");
     setSolution(nextSolution);
+    setDay(null);
     setGuesses([]);
     setCurrentGuess("");
     setIsGameWon(false);
@@ -366,9 +381,11 @@ function Game() {
   const onShare = async () => {
     trackEvent("share", { won: isGameWon, length: solution.length });
     const text = getShareText(
+      day,
       guesses,
       solution,
       isGameWon,
+      maxGuesses,
       settings.highContrast,
     );
     let label = "Share";
