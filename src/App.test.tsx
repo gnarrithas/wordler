@@ -472,17 +472,17 @@ test("a saved word that left the solution list is discarded", async () => {
   expect(board().textContent).toBe("");
 });
 
-test("reveal length rings a guess of the right length and announces it once", async () => {
+test("reveal length outlines a guess of the right length and announces it once", async () => {
   await renderGame();
   toggleSetting("Reveal Length");
   submit("CART");
   expect(screen.getByRole("group", { name: "Guess: CART" })).not.toHaveClass(
-    "ring-2",
+    "length-match",
   );
   submit("DOG");
   expect(
     screen.getByRole("group", { name: "Guess: DOG (right length)" }),
-  ).toHaveClass("ring-2");
+  ).toHaveClass("length-match", "length-match-enter");
   act(() => {
     vi.advanceTimersByTime(3000);
   });
@@ -497,14 +497,14 @@ test("reveal length rings a guess of the right length and announces it once", as
   expect(screen.getByRole("status")).not.toHaveTextContent("Right length");
 });
 
-test("without reveal length, nothing rings nor announces the right length", async () => {
+test("without reveal length, nothing is outlined nor announced", async () => {
   await renderGame();
   submit("DOG");
   act(() => {
     vi.advanceTimersByTime(3000);
   });
   expect(screen.getByRole("group", { name: "Guess: DOG" })).not.toHaveClass(
-    "ring-2",
+    "length-match",
   );
   expect(queryToast("Right length! The word has 3 letters")).toBeNull();
 });

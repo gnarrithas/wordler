@@ -1,4 +1,5 @@
-import { useState } from "react";
+import classnames from "classnames";
+import { CSSProperties, useState } from "react";
 import {
   BOUNCE_MS,
   getBounceStaggerMs,
@@ -33,16 +34,25 @@ export const CompletedRow = ({
   const staggerMs = getRevealStaggerMs(guess.length);
   const bounceStartMs = (startMs ?? 0) + getRowRevealMs(guess.length);
   const bounceStaggerMs = getBounceStaggerMs(guess.length);
+  // A row that just arrived pops its Reveal Length outline in once its tiles
+  // have flipped; a restored row shows it straight away.
+  const isEntering = isLengthMatch && startMs !== undefined;
 
   return (
     <div
       // w-max: hug this row's tiles instead of stretching to the widest row,
-      // so the Reveal Length ring stays the guess's own size.
-      className={`flex w-max mb-1${
-        isLengthMatch
-          ? " rounded-lg ring-2 ring-offset-1 ring-indigo-500 dark:ring-indigo-400 dark:ring-offset-wordle-night-bg"
-          : ""
-      }`}
+      // so the Reveal Length outline stays the guess's own size.
+      className={classnames("flex w-max mb-1", {
+        "length-match": isLengthMatch,
+        "length-match-enter": isEntering,
+      })}
+      style={
+        isEntering
+          ? ({
+              "--length-match-delay": `${bounceStartMs}ms`,
+            } as CSSProperties)
+          : undefined
+      }
       role="group"
       aria-label={`Guess: ${guess}${isLengthMatch ? " (right length)" : ""}`}
     >

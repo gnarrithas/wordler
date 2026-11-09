@@ -12,6 +12,19 @@
   --scroll-thumb: #94a3b8; /* slate-400 */
 }
 
+/* Reveal Length outline: indigo, violet and sky (Tailwind 500s; 400s at night). */
+:root {
+  --length-match-1: #6366f1;
+  --length-match-2: #8b5cf6;
+  --length-match-3: #0ea5e9;
+}
+
+html.dark {
+  --length-match-1: #818cf8;
+  --length-match-2: #a78bfa;
+  --length-match-3: #38bdf8;
+}
+
 :root {
   --wordle-correct: #6aaa64;
   --wordle-present: #c9b458;
@@ -158,10 +171,89 @@ body {
   }
 }
 
+/* Reveal Length: a gradient outline around a guess of the answer's length.
+   ::before is the outline (a padded gradient with its middle masked out),
+   slowly drifting; ::after is a one-off ripple. Rows that just arrived
+   (.length-match-enter) wait for --length-match-delay, the end of the tile
+   flips, then pop the outline in. Box shadows rather than transforms keep
+   the ripple from growing the board's scroll area. */
+.length-match {
+  position: relative;
+}
+
+.length-match::before,
+.length-match::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 10px;
+  pointer-events: none;
+}
+
+.length-match::before {
+  padding: 2px;
+  background: linear-gradient(
+      90deg,
+      var(--length-match-1),
+      var(--length-match-2),
+      var(--length-match-3),
+      var(--length-match-1)
+    )
+    0 0 / 300% 100%;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: length-match-drift 6s linear infinite;
+}
+
+.length-match-enter::before {
+  animation:
+    length-match-pop 500ms cubic-bezier(0.34, 1.56, 0.64, 1)
+      var(--length-match-delay, 0ms) both,
+    length-match-drift 6s linear infinite;
+}
+
+.length-match-enter::after {
+  animation: length-match-ripple 900ms ease-out var(--length-match-delay, 0ms)
+    both;
+}
+
+@keyframes length-match-drift {
+  to {
+    background-position: 150% 0;
+  }
+}
+
+@keyframes length-match-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes length-match-ripple {
+  from {
+    box-shadow: 0 0 0 0 var(--length-match-2);
+    opacity: 0.7;
+  }
+  to {
+    box-shadow: 0 0 0 10px var(--length-match-2);
+    opacity: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .cell-reveal,
   .logo-reveal,
-  .cell-bounce {
+  .cell-bounce,
+  .length-match::before,
+  .length-match::after {
     animation: none;
   }
 }

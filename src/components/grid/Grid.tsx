@@ -11,7 +11,7 @@ type Props = {
   maxGuesses: number;
   isGameWon: boolean;
   isGameOver: boolean;
-  // Reveal Length: ring the guesses that have the answer's length.
+  // Reveal Length: outline the guesses that have the answer's length.
   highlightLength?: boolean;
   // Dev only: letters shown faded in the input row's empty boxes.
   hint?: string;
@@ -102,7 +102,7 @@ export const Grid = ({
         // Top padding leaves room for winning tiles to bounce without clipping.
         className="board-scroll relative min-h-0 overflow-auto pt-6"
       >
-        {/* px-1 leaves room for the Reveal Length ring around a row. */}
+        {/* px-1 leaves room for the Reveal Length outline around a row. */}
         <div ref={rowsRef} data-testid="board" className="w-max mx-auto px-1">
           {guesses.map((guess, i) => (
             <CompletedRow
