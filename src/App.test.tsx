@@ -180,7 +180,9 @@ test("Reveal shows the answer faded behind the typed letters", async () => {
   press("Backspace");
   // Revealing does not end the game.
   press("Enter");
-  expect(screen.getByRole("group", { name: "Guess: COT" })).toBeInTheDocument();
+  expect(
+    screen.getByRole("group", { name: "Guess: COT (right length)" }),
+  ).toBeInTheDocument();
   expect(inputRow()).toBeInTheDocument();
   expect(hints()).toBe("CAT");
   mouseClick(screen.getByText("Hide"));
@@ -233,7 +235,9 @@ test("guesses shorter than three letters are not enough", async () => {
 test("tiles, rows and keys have accessible names", async () => {
   await renderGame();
   submit("COT");
-  expect(screen.getByRole("group", { name: "Guess: COT" })).toBeInTheDocument();
+  expect(
+    screen.getByRole("group", { name: "Guess: COT (right length)" }),
+  ).toBeInTheDocument();
   expect(screen.getByRole("img", { name: "C correct" })).toBeInTheDocument();
   expect(screen.getByRole("img", { name: "O absent" })).toBeInTheDocument();
   act(() => {
@@ -262,17 +266,20 @@ const toggleSetting = (name: string) => {
   closeSettings();
 };
 
-test("settings start off and survive a reload", async () => {
+test("settings start off but reveal length, and survive a reload", async () => {
   const { unmount } = await renderGame();
   openSettings();
   for (const name of [
     "Hard Mode",
-    "Reveal Length",
     "High Contrast Mode",
     "Onscreen Keyboard Input Only",
   ]) {
     expect(settingSwitch(name)).toHaveAttribute("aria-checked", "false");
   }
+  expect(settingSwitch("Reveal Length")).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
   mouseClick(settingSwitch("Reveal Length"));
   closeSettings();
   unmount();
@@ -280,7 +287,7 @@ test("settings start off and survive a reload", async () => {
   openSettings();
   expect(settingSwitch("Reveal Length")).toHaveAttribute(
     "aria-checked",
-    "true",
+    "false",
   );
 });
 
@@ -566,7 +573,6 @@ test("a saved word that left the solution list is discarded", async () => {
 
 test("reveal length outlines a guess of the right length and announces it once", async () => {
   await renderGame();
-  toggleSetting("Reveal Length");
   submit("CART");
   expect(screen.getByRole("group", { name: "Guess: CART" })).not.toHaveClass(
     "length-match",
@@ -592,7 +598,6 @@ test("reveal length outlines a guess of the right length and announces it once",
 test("reveal length dots the boxes past a short word once its length is revealed", async () => {
   const dotted = () => inputRow()!.querySelectorAll(".border-dotted").length;
   await renderGame();
-  toggleSetting("Reveal Length");
   submit("CART");
   act(() => {
     vi.advanceTimersByTime(3000);
@@ -609,6 +614,7 @@ test("reveal length dots the boxes past a short word once its length is revealed
 
 test("without reveal length, nothing is outlined nor announced", async () => {
   await renderGame();
+  toggleSetting("Reveal Length");
   submit("DOG");
   act(() => {
     vi.advanceTimersByTime(3000);

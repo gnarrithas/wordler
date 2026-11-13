@@ -21,12 +21,13 @@ const STORAGE_KEYS: Record<SettingKey, string> = {
 
 const DEFAULTS: Settings = {
   hardMode: false,
-  revealLength: false,
+  revealLength: true,
   highContrast: false,
   onscreenKeyboardOnly: false,
 };
 
-// Before these toggles, one "mode" key held easy, medium or hard.
+// Before these toggles, one "mode" key held easy, medium or hard. Only easy
+// revealed the length, so the other modes keep it off despite the default.
 const LEGACY_MODE_KEY = "mode";
 
 const readStorage = (key: string): string | null => {
@@ -50,13 +51,10 @@ const writeStorage = (key: string, value: string) => {
 
 const fromLegacyMode = (): Partial<Settings> => {
   const legacy = readStorage(LEGACY_MODE_KEY);
-  if (legacy === "easy") {
-    return { revealLength: true };
+  if (legacy === null) {
+    return {};
   }
-  if (legacy === "hard") {
-    return { hardMode: true };
-  }
-  return {};
+  return { revealLength: legacy === "easy", hardMode: legacy === "hard" };
 };
 
 export const loadSettings = (): Settings => {

@@ -2,10 +2,10 @@ import { applyHighContrast, loadSettings, saveSetting } from "./settings";
 
 beforeEach(() => localStorage.clear());
 
-test("every setting is off by default", () => {
+test("only reveal length is on by default", () => {
   expect(loadSettings()).toEqual({
     hardMode: false,
-    revealLength: false,
+    revealLength: true,
     highContrast: false,
     onscreenKeyboardOnly: false,
   });
@@ -17,7 +17,7 @@ test("settings survive a reload", () => {
   expect(loadSettings()).toMatchObject({
     hardMode: true,
     onscreenKeyboardOnly: true,
-    revealLength: false,
+    revealLength: true,
   });
 });
 
@@ -31,6 +31,11 @@ test("the old easy and hard modes carry over", () => {
   expect(loadSettings()).toMatchObject({ revealLength: true, hardMode: false });
   localStorage.setItem("mode", "hard");
   expect(loadSettings()).toMatchObject({ revealLength: false, hardMode: true });
+  localStorage.setItem("mode", "medium");
+  expect(loadSettings()).toMatchObject({
+    revealLength: false,
+    hardMode: false,
+  });
   saveSetting("hardMode", false);
   expect(loadSettings().hardMode).toBe(false);
 });
